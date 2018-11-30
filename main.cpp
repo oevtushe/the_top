@@ -13,7 +13,9 @@ int		main(void)
 	{
 		std::cout << t.get_pid() << " " << t.get_name() << " "
 			<< t.get_state() << " " << t.get_nice() << " " << t.get_vmsize()
-			<< " " << t.get_shr() << " " << t.get_res() << std::endl;
+			<< " " << t.get_shr() << " " << t.get_res()
+			<< " " << t.get_user() << " " << t.get_timep()
+			<< " " << t.get_mem() << std::endl;
 	}
 	return (0);
 }

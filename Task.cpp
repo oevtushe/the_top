@@ -89,3 +89,33 @@ std::string	Task::get_res() const
 {
 	return (_res);
 }
+
+void	Task::set_user(std::string const &user)
+{
+	_user = user;
+}
+
+std::string	Task::get_user() const
+{
+	return (_user);
+}
+
+void	Task::set_timep(std::string const &timep)
+{
+	_timep = timep;
+}
+
+std::string	Task::get_timep() const
+{
+	return (_timep);
+}
+
+void	Task::set_mem(std::string const &mem)
+{
+	_mem = mem;
+}
+
+std::string	Task::get_mem() const
+{
+	return (_mem);
+}
