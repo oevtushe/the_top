@@ -29,16 +29,6 @@ SysInfo::ProcessesDB	SysInfo::get_tasks() const
 	return (db);
 }
 
-unsigned long int	get_cpu_total()
-{
-	std::ifstream				ftotal_stat("/proc/stat");
-	std::vector<std::string>	total{std::istream_iterator<std::string>(ftotal_stat),
-		std::istream_iterator<std::string>()};
-
-	return ((unsigned long int)std::accumulate(total.begin() + 1, total.begin() + 11, 0UL,
-				[](unsigned long int fst, std::string &str2) { return (fst + std::stol(str2));  }));
-}
-
 unsigned long int	get_mem_total()
 {
 	std::ifstream	fmeminfo{"/proc/meminfo"};
@@ -52,7 +42,24 @@ unsigned long int	get_mem_total()
 
 SysInfo::GenDB		SysInfo::get_gen_data() const
 {
-	return (GenDB{}); // implement
+	GenDB	db;
+	std::ifstream				ftotal_stat("/proc/stat");
+	std::vector<std::string>	total{std::istream_iterator<std::string>(ftotal_stat),
+		std::istream_iterator<std::string>()};
+
+	unsigned long int cpu_total = std::accumulate(total.begin() + 1, total.begin() + 11, 0UL,
+				[](unsigned long int fst, std::string &str2) { return (fst + std::stol(str2));  });
+
+	db["cpu_total"] = std::to_string(cpu_total);
+	db["us"] = total[1];
+	db["ni"] = total[2];
+	db["sy"] = total[3];
+	db["id"] = total[4];
+	db["wa"] = total[5];
+	db["hi"] = total[6];
+	db["si"] = total[7];
+	db["st"] = total[8];
+	return (db);
 }
 
 SysInfo::ProcessDB	SysInfo::_get_proc_data(std::string const path) const
@@ -92,5 +99,7 @@ SysInfo::ProcessDB	SysInfo::_get_proc_data(std::string const path) const
 
 	double	mem = (static_cast<double>(res) / get_mem_total()) * 100.0 + 0.05;
 	data["mem"] = std::to_string(mem);
+	//data["us"] = std::to_string(stat_data[13]);
+	//data["sy"] = std::to_string(stat_data[14]);
 	return (data);
 }
