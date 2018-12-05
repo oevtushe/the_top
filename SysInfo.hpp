@@ -1,17 +1,22 @@
 #ifndef SYSINFO_HPP
 # define SYSINFO_HPP
 
+# include <map>
 # include <vector>
-# include "Task.hpp"
 
 class	SysInfo
 {
 	public:
+		using	ProcessDB = std::map<std::string, std::string>;
+		using	GenDB = std::map<std::string, std::string>;
+		using	ProcessesDB = std::vector<ProcessDB>;
+
 		SysInfo() = default;
 		~SysInfo() = default;
-		std::vector<Task>	get_tasks() const;
+		ProcessesDB	get_tasks() const;
+		GenDB		get_gen_data() const;
 	private:
-		Task				_get_data(std::string const path) const;
+		ProcessDB	_get_proc_data(std::string const path) const;
 };
 
 #endif

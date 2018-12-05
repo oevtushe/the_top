@@ -9,11 +9,11 @@
 #include <math.h>
 #include <sys/stat.h>
 
-std::vector<Task> SysInfo::get_tasks() const
+SysInfo::ProcessesDB	SysInfo::get_tasks() const
 {
 	DIR					*dir;
 	struct dirent		*runner;
-	std::vector<Task>	tasks;
+	ProcessesDB			db;
 	std::string			proc{"/proc/"};
 	std::string			wrap;
 
@@ -23,10 +23,10 @@ std::vector<Task> SysInfo::get_tasks() const
 	{
 		wrap = runner->d_name;
 		if (std::all_of(wrap.begin(), wrap.end(), [](char c){ return std::isdigit(c); }))
-			tasks.push_back(_get_data(proc + runner->d_name));
+			db.push_back(_get_proc_data(proc + runner->d_name));
 	}
 	closedir(dir);
-	return (tasks);
+	return (db);
 }
 
 unsigned long int	get_cpu_total()
@@ -50,46 +50,47 @@ unsigned long int	get_mem_total()
 	return (res);
 }
 
-Task	SysInfo::_get_data(std::string const path) const
+SysInfo::GenDB		SysInfo::get_gen_data() const
 {
-	Task			t;
+	return (GenDB{}); // implement
+}
+
+SysInfo::ProcessDB	SysInfo::_get_proc_data(std::string const path) const
+{
+	ProcessDB		data;
 	std::ifstream	fstat(path + "/stat");
 	std::vector<std::string> stat_data{std::istream_iterator<std::string>(fstat),
 		std::istream_iterator<std::string>()};
 
-	t.set_pid(stat_data[0]);
-	t.set_name(stat_data[1]);
-	t.set_state(stat_data[2]);
-	t.set_nice(stat_data[18]);
-	t.set_priority(stat_data[17]);
+	data["pid"] = stat_data[0];
+	data["command"] = stat_data[1];
+	data["state"] = stat_data[2];
+	data["nice"] = stat_data[18];
+	data["priority"] = stat_data[17];
 
 	unsigned long int vmsize = std::stoul(stat_data[22]) / 1024;
-	t.set_vmsize(std::to_string(vmsize)); // replace by PAGE_SIZE
+	data["vmsize"] = std::to_string(vmsize); // replace by PAGE_SIZE
 
 	long int	res = std::stol(stat_data[23]) * 4096 / 1024;
-	t.set_res(std::to_string(res));
+	data["res"] = std::to_string(res);
 
 	std::ifstream	fstatus(path + "/statm");
 	std::vector<std::string> statm_data{std::istream_iterator<std::string>(fstatus),
 		std::istream_iterator<std::string>()};
-
 	long int	shr = std::stol(statm_data[2]) * 4096 / 1024;
-	t.set_shr(std::to_string(shr));
+	data["shared"] = std::to_string(shr);
 
 	struct	stat	st;
 	if (lstat(path.c_str(), &st))
 		throw std::logic_error("Can't lstat dir");
-
-	struct passwd	*ps;
-	ps = getpwuid(st.st_uid);
-	t.set_user(ps->pw_name);
+	data["user"] = getpwuid(st.st_uid)->pw_name;
 
 	unsigned long	utime = std::stoul(stat_data[13]);
 	unsigned long	stime = std::stoul(stat_data[14]);
 	double	timep = (utime + stime) / 100.0;
-	t.set_timep(std::to_string(timep)); // meybe store in ticks
+	data["time+"] = std::to_string(timep); // meybe store in ticks
 
 	double	mem = (static_cast<double>(res) / get_mem_total()) * 100.0 + 0.05;
-	t.set_mem(std::to_string(mem));
-	return (t);
+	data["mem"] = std::to_string(mem);
+	return (data);
 }
