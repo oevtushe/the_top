@@ -64,9 +64,17 @@ void	display_gen_info(SysInfo::GenDB &db, SysInfo::ProcessesDB &pdb)
 			sleeping,
 			stopped,
 			zombie);
-	mvprintw(2, 0, "%%Cpu(s): %s us, %s\n",
+	///////////////////////////////////////////////////////////////////
+	mvprintw(2, 0, "%%Cpu(s): %s us, %s sy, %s ni, %s id, %s wa, %s hi, %s si, %s st\n",
 			db["pus"].c_str(),
-			db["psy"].c_str());
+			db["psy"].c_str(),
+			db["pni"].c_str(),
+			db["npid"].c_str(),
+			db["pwa"].c_str(),
+			db["phi"].c_str(),
+			db["psi"].c_str(),
+			db["pst"].c_str());
+	///////////////////////////////////////////////////////////////////
 	std::ifstream	fmi("/proc/meminfo");
 	std::vector<std::string> mi_data{std::istream_iterator<std::string>(fmi),
 		std::istream_iterator<std::string>()};
@@ -82,9 +90,15 @@ void	display_gen_info(SysInfo::GenDB &db, SysInfo::ProcessesDB &pdb)
 			std::to_string(used).c_str(),
 			std::to_string(buffers).c_str());
 
-	mvprintw(4, 0, "KiB Swap: %8.8s total\n",
-			);
-	mvprintw(4, 0, "%5.5s %-9.9s %2.2s %3.3s %7.7s %7.7s %7.7s %1.1s %4.4s %4.4s %9.9s %.7s\n",
+	unsigned long int swap_total = std::stoul(mi_data[43]);
+	unsigned long int swap_free = std::stoul(mi_data[46]);
+	unsigned long int swap_used = swap_total - swap_free;
+	mvprintw(4, 0, "KiB Swap: %8lu total, %8lu free, %8lu used. %8.8s avail Mem\n",
+			swap_total,
+			swap_free,
+			swap_used,
+			mi_data[7].c_str());
+	mvprintw(5, 0, "%5.5s %-9.9s %2.2s %3.3s %7.7s %7.7s %7.7s %1.1s %4.4s %4.4s %9.9s %.7s\n",
 			"PID",
 			"USER",
 			"PR",
@@ -101,7 +115,7 @@ void	display_gen_info(SysInfo::GenDB &db, SysInfo::ProcessesDB &pdb)
 
 void	display_proc_info(SysInfo::ProcessesDB &db)
 {
-	move(5, 0);
+	move(6, 0);
 	for (auto &proc : db)
 	{
 		printw("%5.5s %-9.9s %2.2s %3.3s %7.7s %7.7s %7.7s %1.1s %4.4s %4.4s %9.7s %-s\n",
@@ -120,13 +134,26 @@ void	display_proc_info(SysInfo::ProcessesDB &db)
 	}
 }
 
+struct	prev_state
+{
+	unsigned long int		us;
+	unsigned long int		sy;
+	unsigned long int		ni;
+	unsigned long int		id;
+	unsigned long int		wa;
+	unsigned long int		hi;
+	unsigned long int		si;
+	unsigned long int		st;
+	unsigned long int		total;
+};
+
 int		main(void)
 {
 	SysInfo	si;
 	SysInfo::ProcessesDB	proc;
 	SysInfo::GenDB			gen;
-	unsigned long int						prev{};
-	unsigned long int						prev2{};
+	struct prev_state ps{};
+	struct prev_state ps_dif{};
 
 	initscr();
 	start_color();
@@ -136,15 +163,37 @@ int		main(void)
 	{
 		proc = si.get_tasks();
 		gen = si.get_gen_data();
-		gen["pus"] = std::to_string((static_cast<double>(std::stoul(gen["us"]) - prev) / prev) * 100.0);
-		gen["psy"] = std::to_string((static_cast<double>(std::stoul(gen["sy"]) - prev2) / prev2) * 100.0);
+		ps_dif.us = std::stoul(gen["us"]) - ps.us;
+		ps_dif.sy = std::stoul(gen["sy"]) - ps.sy;
+		ps_dif.ni = std::stoul(gen["ni"]) - ps.ni;
+		ps_dif.id = std::stoul(gen["id"]) - ps.id;
+		ps_dif.wa = std::stoul(gen["wa"]) - ps.wa;
+		ps_dif.hi = std::stoul(gen["hi"]) - ps.hi;
+		ps_dif.si = std::stoul(gen["si"]) - ps.si;
+		ps_dif.st = std::stoul(gen["st"]) - ps.st;
+		ps_dif.total = ps_dif.us + ps_dif.sy + ps_dif.ni + ps_dif.id + ps_dif.wa + ps_dif.hi + ps_dif.si + ps_dif.st;
+		gen["pus"] = std::to_string((static_cast<double>(ps_dif.us) / ps_dif.total) * 100.0);
+		gen["psy"] = std::to_string((static_cast<double>(ps_dif.sy) / ps_dif.total) * 100.0);
+		gen["pni"] = std::to_string((static_cast<double>(ps_dif.ni) / ps_dif.total) * 100.0);
+		gen["npid"] = std::to_string((static_cast<double>(ps_dif.id) / ps_dif.total) * 100.0);
+		gen["pwa"] = std::to_string((static_cast<double>(ps_dif.wa) / ps_dif.total) * 100.0);
+		gen["phi"] = std::to_string((static_cast<double>(ps_dif.hi) / ps_dif.total) * 100.0);
+		gen["psi"] = std::to_string((static_cast<double>(ps_dif.si) / ps_dif.total) * 100.0);
+		gen["pst"] = std::to_string((static_cast<double>(ps_dif.st) / ps_dif.total) * 100.0);
 		display_gen_info(gen, proc);
 		display_proc_info(proc);
 		refresh();
 		sleep(1);
 		erase();
-		prev = std::stoul(gen["us"]);
-		prev2 = std::stoul(gen["sy"]);
+		ps.us = std::stoul(gen["us"]);
+		ps.sy = std::stoul(gen["sy"]);
+		ps.ni = std::stoul(gen["ni"]);
+		ps.id = std::stoul(gen["id"]);
+		ps.wa = std::stoul(gen["wa"]);
+		ps.hi = std::stoul(gen["hi"]);
+		ps.si = std::stoul(gen["si"]);
+		ps.st = std::stoul(gen["st"]);
+		ps.total = ps.us + ps.sy + ps.ni + ps.id + ps.wa + ps.hi + ps.si + ps.st;
 	}
 	getch();
 	endwin();
