@@ -1,5 +1,4 @@
 #include "SysInfo.hpp"
-#include <utmp.h>
 #include <sys/sysinfo.h>
 #include <ncurses.h>
 #include <iostream>
@@ -10,61 +9,36 @@
 #include <fstream>
 #include <algorithm>
 
-int		get_users()
+void	display_gen_info(SysInfo const &si)
 {
-	FILE *f{};
-	struct utmp tmp;
-	int		cnt{};
-
-	if (!(f = fopen("/run/utmp", "r")))
-		throw(std::logic_error("/run/utmp no such file, or i can't open it"));
-	while (fread(&tmp, sizeof(tmp), 1, f))
-		++cnt;
-	fclose(f);
-	return (cnt);
-}
-
-void	display_gen_info(SysInfo::GenDB &db, SysInfo::ProcessesDB &pdb)
-{
-	char	buff[9];
-	time_t	tloc;
-	struct tm *tmp{};
-
-	tloc = time(NULL);
-	tmp = localtime(&tloc);
-	if (!tmp)
-		throw (std::logic_error("Can't get time"));
-	if (!strftime(buff, sizeof(buff), "%T", tmp))
-		throw (std::logic_error("strftime goes down"));
-
-	struct sysinfo si;
-
-	sysinfo(&si);
-	long int	hours = si.uptime / 3600;
-	long int	minutes = (si.uptime % 3600) / 60;
-	std::ifstream	favg("/proc/loadavg");
-	std::vector<std::string> lavg_data{std::istream_iterator<std::string>(favg),
-		std::istream_iterator<std::string>()};
-	mvprintw(0, 0, "the_top - %s up %2ld:%ld, %2.2s user,  load average: %s, %s, %s\n",
-			buff,
+	////////////////////////////////////////////////////////////// top part
+	long int	hours = si.get_uptime() / 3600;
+	long int	minutes = (si.get_uptime() % 3600) / 60;
+	//////////////////////////////////////////////////////////////
+	mvprintw(0, 0, "the_top - %s up %2ld:%ld, %2d user,  load average: %.2f, %.2f, %.2f\n",
+			si.get_curtime().c_str(),
 			hours,
 			minutes,
-			std::to_string(get_users()).c_str(),
-			lavg_data[0].c_str(),
-			lavg_data[1].c_str(),
-			lavg_data[2].c_str());
-	int		total = pdb.size();
-	int		running = std::count_if(pdb.begin(), pdb.end(), [](SysInfo::ProcessDB &t){ return (t["state"] == "R");});
-	int		sleeping = std::count_if(pdb.begin(), pdb.end(), [](SysInfo::ProcessDB &t){ return (t["state"] == "S");});
-	int		stopped = std::count_if(pdb.begin(), pdb.end(), [](SysInfo::ProcessDB &t){ return (t["state"] == "T");});
-	int		zombie = std::count_if(pdb.begin(), pdb.end(), [](SysInfo::ProcessDB &t){ return (t["state"] == "Z");});
+			si.get_num_of_users(),
+			si.get_loadavg()[0],
+			si.get_loadavg()[1],
+			si.get_loadavg()[2]);
+	////////////////////////////////////////////////////////////// top part
+	std::vector<SysInfo::Procinfo> proc = si.get_procs_data();
+	int		total = proc.size();
+	int		running = std::count_if(proc.begin(), proc.end(), [](SysInfo::Procinfo &t){ return (t.state == 'R');});
+	int		sleeping = std::count_if(proc.begin(), proc.end(), [](SysInfo::Procinfo &t){ return (t.state == 'S');});
+	int		stopped = std::count_if(proc.begin(), proc.end(), [](SysInfo::Procinfo &t){ return (t.state == 'T');});
+	int		zombie = std::count_if(proc.begin(), proc.end(), [](SysInfo::Procinfo &t){ return (t.state == 'Z');});
+	//////////////////////////////////////////////////////////////
 	mvprintw(1, 0, "Tasks: %3d total, %3d running, %3d sleeping, %3d stopped, %3d zombie\n",
 			total,
 			running,
 			sleeping,
 			stopped,
 			zombie);
-	///////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////// top part
+	/*
 	mvprintw(2, 0, "%%Cpu(s): %s us, %s sy, %s ni, %s id, %s wa, %s hi, %s si, %s st\n",
 			db["pus"].c_str(),
 			db["psy"].c_str(),
@@ -74,30 +48,28 @@ void	display_gen_info(SysInfo::GenDB &db, SysInfo::ProcessesDB &pdb)
 			db["phi"].c_str(),
 			db["psi"].c_str(),
 			db["pst"].c_str());
+	*/
 	///////////////////////////////////////////////////////////////////
-	std::ifstream	fmi("/proc/meminfo");
-	std::vector<std::string> mi_data{std::istream_iterator<std::string>(fmi),
-		std::istream_iterator<std::string>()};
+	/////////////////////////////////////////////////////////////////// can be replaced
+	SysInfo::Meminfo	memi = si.get_mem_data();
 	unsigned long int	buffers{};
-	unsigned long int	ttl{std::stoul(mi_data[1])};
-	unsigned long int	free{std::stoul(mi_data[4])};
+	unsigned long int	ttl{memi.mem_total};
+	unsigned long int	free{memi.mem_free};
 	unsigned long int	used{};
-	buffers = std::stoul(mi_data[10]) + std::stoul(mi_data[13]) + std::stoul(mi_data[67]);
+	buffers = memi.buffers + memi.cached + memi.sreclaimable;
 	used = ttl - free - buffers;
-	mvprintw(3, 0, "KiB Mem : %8.8s total, %8.8s free, %8.8s used, %8.8s buff/cache\n",
-			mi_data[1].c_str(),
-			mi_data[4].c_str(),
-			std::to_string(used).c_str(),
-			std::to_string(buffers).c_str());
+	///////////////////////////////////////////////////////////////////
+	mvprintw(3, 0, "KiB Mem : %8.8lu total, %8.8lu free, %8.8lu used, %8.8lu buff/cache\n",
+			memi.mem_total,
+			memi.mem_free,
+			used,
+			buffers);
 
-	unsigned long int swap_total = std::stoul(mi_data[43]);
-	unsigned long int swap_free = std::stoul(mi_data[46]);
-	unsigned long int swap_used = swap_total - swap_free;
-	mvprintw(4, 0, "KiB Swap: %8lu total, %8lu free, %8lu used. %8.8s avail Mem\n",
-			swap_total,
-			swap_free,
-			swap_used,
-			mi_data[7].c_str());
+	mvprintw(4, 0, "KiB Swap: %8lu total, %8lu free, %8lu used. %8.8lu avail Mem\n",
+			memi.swap_total,
+			memi.swap_free,
+			memi.swap_total - memi.swap_free,
+			memi.available);
 	mvprintw(5, 0, "%5.5s %-9.9s %2.2s %3.3s %7.7s %7.7s %7.7s %1.1s %4.4s %4.4s %9.9s %.7s\n",
 			"PID",
 			"USER",
@@ -113,24 +85,24 @@ void	display_gen_info(SysInfo::GenDB &db, SysInfo::ProcessesDB &pdb)
 			"COMMAND");
 }
 
-void	display_proc_info(SysInfo::ProcessesDB &db)
+void	display_proc_info(std::vector<SysInfo::Procinfo> const &procs)
 {
 	move(6, 0);
-	for (auto &proc : db)
+	for (auto &proc : procs)
 	{
-		printw("%5.5s %-9.9s %2.2s %3.3s %7.7s %7.7s %7.7s %1.1s %4.4s %4.4s %9.7s %-s\n",
-				proc["pid"].c_str(),
-				proc["user"].c_str(),
-				proc["priority"].c_str(),
-				proc["nice"].c_str(),
-				proc["vmsize"].c_str(),
-				proc["res"].c_str(),
-				proc["shared"].c_str(),
-				proc["state"].c_str(),
+		printw("%5d %-9.9s %2d %3d %7d %7d %7d %c %4.4s %4d %9d %-s\n",
+				proc.pid,
+				proc.user.c_str(),
+				proc.priority,
+				proc.nice,
+				proc.vsize,
+				proc.rss,
+				proc.mem_shared,
+				proc.state,
 				"%CPU",
-				proc["mem"].c_str(),
-				proc["time+"].c_str(),
-				proc["command"].c_str());
+				0, //
+				0, //
+				proc.command.c_str());
 	}
 }
 
@@ -150,8 +122,7 @@ struct	prev_state
 int		main(void)
 {
 	SysInfo	si;
-	SysInfo::ProcessesDB	proc;
-	SysInfo::GenDB			gen;
+	SysInfo	prev_si;
 	struct prev_state ps{};
 	struct prev_state ps_dif{};
 
@@ -161,8 +132,7 @@ int		main(void)
 
 	while (true)
 	{
-		proc = si.get_tasks();
-		gen = si.get_gen_data();
+		/*
 		ps_dif.us = std::stoul(gen["us"]) - ps.us;
 		ps_dif.sy = std::stoul(gen["sy"]) - ps.sy;
 		ps_dif.ni = std::stoul(gen["ni"]) - ps.ni;
@@ -180,11 +150,14 @@ int		main(void)
 		gen["phi"] = std::to_string((static_cast<double>(ps_dif.hi) / ps_dif.total) * 100.0);
 		gen["psi"] = std::to_string((static_cast<double>(ps_dif.si) / ps_dif.total) * 100.0);
 		gen["pst"] = std::to_string((static_cast<double>(ps_dif.st) / ps_dif.total) * 100.0);
-		display_gen_info(gen, proc);
-		display_proc_info(proc);
+		*/
+		si.update();
+		display_gen_info(si);
+		display_proc_info(si.get_procs_data());
 		refresh();
 		sleep(1);
 		erase();
+		/*
 		ps.us = std::stoul(gen["us"]);
 		ps.sy = std::stoul(gen["sy"]);
 		ps.ni = std::stoul(gen["ni"]);
@@ -194,6 +167,7 @@ int		main(void)
 		ps.si = std::stoul(gen["si"]);
 		ps.st = std::stoul(gen["st"]);
 		ps.total = ps.us + ps.sy + ps.ni + ps.id + ps.wa + ps.hi + ps.si + ps.st;
+		*/
 	}
 	getch();
 	endwin();
