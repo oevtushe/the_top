@@ -1,3 +1,4 @@
+#include "Visual_ncs.hpp"
 #include "SysInfo.hpp"
 #include <sys/sysinfo.h>
 #include <ncurses.h>
@@ -9,34 +10,77 @@
 #include <fstream>
 #include <algorithm>
 
+void	init_top_info(The_top::Top_info &ti, SysInfo const &si)
+{
+	ti.cur_time = si.get_curtime();
+	ti.uptime = si.get_uptime();
+	ti.num_of_users = si.get_num_of_users();
+	std::array<double, 3> avg = si.get_loadavg();
+	ti.la_1 = avg[0];
+	ti.la_5 = avg[1];
+	ti.la_15 = avg[2];
+}
+
+void	init_tasks_info(The_top::Tasks_info &ti, SysInfo const &si)
+{
+	std::vector<SysInfo::Procinfo> const &proc = si.get_procs_data();
+
+	ti.total = proc.size();
+	ti.running = std::count_if(proc.begin(), proc.end(), [](SysInfo::Procinfo const &t){ return (t.state == 'R');});
+	ti.sleeping = std::count_if(proc.begin(), proc.end(), [](SysInfo::Procinfo const &t){ return (t.state == 'S');});
+	ti.stopped = std::count_if(proc.begin(), proc.end(), [](SysInfo::Procinfo const &t){ return (t.state == 'T');});
+	ti.zombie = std::count_if(proc.begin(), proc.end(), [](SysInfo::Procinfo const &t){ return (t.state == 'Z');});
+}
+
+void	init_cpu_info()
+{
+}
+
+void	init_mem_info(The_top::Mem_info &ti, SysInfo const &si)
+{
+	SysInfo::Meminfo const &mi = si.get_mem_data();
+
+	ti.total = mi.mem_total;
+	ti.free = mi.mem_free;
+	ti.bc = mi.buffer + mi.cache + mi.sreclaimable;
+	ti.used = mi.mem_total - mi.mem_free - ti.bc;
+}
+
+void	init_swap_info(The_top::Swap_info &ti, SysInfo const &si)
+{
+	SysInfo::Meminfo const &mi = si.get_mem_data();
+
+	ti.total = mi.swap_total;
+	ti.free = mi.swap_free;
+	ti.used = mi.swap_total - mi.swap_free;
+	ti.avail = mi.available;
+}
+
+void	init_procs_info(std::vector<The_top::Proc_info> &pi, SysInfo const &si)
+{
+	std::vector<SysInfo::Procinfo> const &procs = si.get_procs_data();
+
+	std::transform(procs.begin(), procs.end(), pi.begin(), pi.begin(), [](SysInfo::Procinfo const &pi_old, The_top::Proc_info &pi_tmp){
+			The_top::Proc_info pi_new;
+
+			pi_new.pid = pi_old.pid;
+			pi_new.user = pi_old.user;
+			pi_new.priority = pi_old.priority;
+			pi_new.nice = pi_old.nice;
+			pi_new.vsize = pi_old.vsize;
+			pi_new.res = pi_old.rss;
+			pi_new.shared = pi_old.mem_shared;
+			pi_new.state = pi_old.state;
+			//pi_new.cpu = pi_old.cpu; //
+			//pi_new.mem = pi_old.mem;
+			pi_new.timep = (pi_old.utime + pi_old.stime) / sysconf(_SC_CLK_TCK);
+			pi_new.command = pi_old.command;
+			return (pi_new);
+	});
+}
+
 void	display_gen_info(SysInfo const &si)
 {
-	////////////////////////////////////////////////////////////// top part
-	long int	hours = si.get_uptime() / 3600;
-	long int	minutes = (si.get_uptime() % 3600) / 60;
-	//////////////////////////////////////////////////////////////
-	mvprintw(0, 0, "the_top - %s up %2ld:%ld, %2d user,  load average: %.2f, %.2f, %.2f\n",
-			si.get_curtime().c_str(),
-			hours,
-			minutes,
-			si.get_num_of_users(),
-			si.get_loadavg()[0],
-			si.get_loadavg()[1],
-			si.get_loadavg()[2]);
-	////////////////////////////////////////////////////////////// top part
-	std::vector<SysInfo::Procinfo> proc = si.get_procs_data();
-	int		total = proc.size();
-	int		running = std::count_if(proc.begin(), proc.end(), [](SysInfo::Procinfo &t){ return (t.state == 'R');});
-	int		sleeping = std::count_if(proc.begin(), proc.end(), [](SysInfo::Procinfo &t){ return (t.state == 'S');});
-	int		stopped = std::count_if(proc.begin(), proc.end(), [](SysInfo::Procinfo &t){ return (t.state == 'T');});
-	int		zombie = std::count_if(proc.begin(), proc.end(), [](SysInfo::Procinfo &t){ return (t.state == 'Z');});
-	//////////////////////////////////////////////////////////////
-	mvprintw(1, 0, "Tasks: %3d total, %3d running, %3d sleeping, %3d stopped, %3d zombie\n",
-			total,
-			running,
-			sleeping,
-			stopped,
-			zombie);
 	/////////////////////////////////////////////////////////////////// top part
 	/*
 	mvprintw(2, 0, "%%Cpu(s): %s us, %s sy, %s ni, %s id, %s wa, %s hi, %s si, %s st\n",
@@ -50,39 +94,6 @@ void	display_gen_info(SysInfo const &si)
 			db["pst"].c_str());
 	*/
 	///////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////// can be replaced
-	SysInfo::Meminfo	memi = si.get_mem_data();
-	unsigned long int	buffers{};
-	unsigned long int	ttl{memi.mem_total};
-	unsigned long int	free{memi.mem_free};
-	unsigned long int	used{};
-	buffers = memi.buffers + memi.cached + memi.sreclaimable;
-	used = ttl - free - buffers;
-	///////////////////////////////////////////////////////////////////
-	mvprintw(3, 0, "KiB Mem : %8.8lu total, %8.8lu free, %8.8lu used, %8.8lu buff/cache\n",
-			memi.mem_total,
-			memi.mem_free,
-			used,
-			buffers);
-
-	mvprintw(4, 0, "KiB Swap: %8lu total, %8lu free, %8lu used. %8.8lu avail Mem\n",
-			memi.swap_total,
-			memi.swap_free,
-			memi.swap_total - memi.swap_free,
-			memi.available);
-	mvprintw(5, 0, "%5.5s %-9.9s %2.2s %3.3s %7.7s %7.7s %7.7s %1.1s %4.4s %4.4s %9.9s %.7s\n",
-			"PID",
-			"USER",
-			"PR",
-			"NI",
-			"VIRT",
-			"RES",
-			"SHR",
-			"S",
-			"%CPU",
-			"%MEM",
-			"TIME+",
-			"COMMAND");
 }
 
 void	display_proc_info(std::vector<SysInfo::Procinfo> const &procs)
@@ -90,6 +101,8 @@ void	display_proc_info(std::vector<SysInfo::Procinfo> const &procs)
 	move(6, 0);
 	for (auto &proc : procs)
 	{
+		///////////////////////////////////////// can be replaced
+		/*
 		printw("%5d %-9.9s %2d %3d %7d %7d %7d %c %4.4s %4d %9d %-s\n",
 				proc.pid,
 				proc.user.c_str(),
@@ -103,6 +116,8 @@ void	display_proc_info(std::vector<SysInfo::Procinfo> const &procs)
 				0, //
 				0, //
 				proc.command.c_str());
+				*/
+		/////////////////////////////////////////
 	}
 }
 
@@ -123,8 +138,16 @@ int		main(void)
 {
 	SysInfo	si;
 	SysInfo	prev_si;
+	Visual_ncs	ncs;
 	struct prev_state ps{};
 	struct prev_state ps_dif{};
+
+	The_top::Top_info	top_info;
+	The_top::Tasks_info	tasks_info;
+	The_top::Cpu_info	cpu_info;
+	The_top::Mem_info	mem_info;
+	The_top::Swap_info	swap_info;
+	std::vector<The_top::Proc_info>	proc_info;
 
 	initscr();
 	start_color();
@@ -152,8 +175,13 @@ int		main(void)
 		gen["pst"] = std::to_string((static_cast<double>(ps_dif.st) / ps_dif.total) * 100.0);
 		*/
 		si.update();
-		display_gen_info(si);
-		display_proc_info(si.get_procs_data());
+		The_top::init_top_info(top_info, si);
+		The_top::init_tasks_info(tasks_info, si);
+		//ncs.display_cpu_info(si);
+		The_top::init_mem_info(mem_info, si);
+		The_top::init_swap_info(swap_info, si);
+		//ncs.display_swap_info(proc_info, si);
+		//ncs.display_proc_info(si);
 		refresh();
 		sleep(1);
 		erase();

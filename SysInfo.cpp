@@ -79,13 +79,13 @@ SysInfo::Procinfo						SysInfo::_read_proc_data_hlp(std::string const path) cons
 	pi.state = stat_data[2][0];
 	pi.nice = std::stol(stat_data[18]);
 	pi.priority = std::stol(stat_data[17]);
-	pi.vsize = std::stoul(stat_data[22]); // / 1024
-	pi.rss = std::stol(stat_data[23]) * getpagesize(); // in bytes
+	pi.vsize = std::stoul(stat_data[22]) / 1024;
+	pi.rss = std::stol(stat_data[23]) * getpagesize() / 1024;
 
 	std::ifstream	fstatus(path + "/statm");
 	std::vector<std::string> statm_data{std::istream_iterator<std::string>(fstatus),
 		std::istream_iterator<std::string>()};
-	pi.mem_shared = std::stol(statm_data[2]) * getpagesize(); // in bytes
+	pi.mem_shared = std::stol(statm_data[2]) * getpagesize() / 1024;
 
 	struct	stat	st;
 	if (lstat(path.c_str(), &st))
@@ -94,7 +94,7 @@ SysInfo::Procinfo						SysInfo::_read_proc_data_hlp(std::string const path) cons
 
 	pi.utime = std::stoul(stat_data[13]);
 	pi.stime = std::stoul(stat_data[14]);
-	//double	timep = (utime + stime) / 100.0;
+	//double	timep = (utime + stime) / sysconf(_SC_CLK_TCK);
 
 	//double	mem = (static_cast<double>(res) / get_mem_total()) * 100.0 + 0.05;
 	//data["mem"] = std::to_string(mem);
@@ -118,14 +118,16 @@ SysInfo::Meminfo		SysInfo::_read_mem_data(std::ifstream &fmemi) const //general
 	std::vector<std::string>	mi_data{std::istream_iterator<std::string>(fmemi),
 		std::istream_iterator<std::string>()};
 
-	mi.buffers = std::stoul(mi_data[10]);
-	mi.cached = std::stoul(mi_data[13]);
-	mi.sreclaimable = std::stoul(mi_data[67]);
+	//mi.bc = std::stoul(mi_data[10]) + std::stoul(mi_data[67]) + std::stoul(mi_data[13]);
 	mi.mem_total = std::stoul(mi_data[1]);
+	mi.buffer = std::stoul(mi_data[10]);
+	mi.cache = std::stoul(mi_data[13]);
+	mi.sreclaimable = std::stoul(mi_data[67]);
 	mi.mem_free = std::stoul(mi_data[4]);
 	mi.swap_total = std::stoul(mi_data[43]);
 	mi.swap_free = std::stoul(mi_data[46]);
 	mi.available = std::stoul(mi_data[7]);
+	//mi.used = mi.mem_total - mi.mem_free - mi.buffers; // because the world isn't perfect
 	//unsigned long int			used{};
 	//buffers = std::stoul(mi_data[10]) + std::stoul(mi_data[13]) + std::stoul(mi_data[67]);
 	//used = ttl - free - buffers;
@@ -145,10 +147,6 @@ SysInfo::Cpuinfo				SysInfo::_read_cpu_data(std::ifstream &fstat) const //genera
 	std::vector<std::string>	stat{std::istream_iterator<std::string>(fstat),
 										std::istream_iterator<std::string>()};
 	Cpuinfo						ci{};
-	// unsigned long int			cpu_total = std::accumulate(stat.begin() + 1, stat.begin() + 11, 0UL,
-		//		[](unsigned long int fst, std::string &str2) { return (fst + std::stol(str2));  });
-
-	//db["cpu_total"] = std::to_string(cpu_total); // calculate somewhere else
 
 	ci.user = std::stol(stat[1]);
 	ci.nice = std::stol(stat[2]);
@@ -158,6 +156,10 @@ SysInfo::Cpuinfo				SysInfo::_read_cpu_data(std::ifstream &fstat) const //genera
 	ci.irq = std::stol(stat[6]);
 	ci.softirq = std::stol(stat[7]);
 	ci.steal = std::stol(stat[8]);
+
+	//long int					cpu_total = std::accumulate(stat.begin() + 1, stat.begin() + 11, 0L,
+	//		[](long int fst, std::string &str2) { return (fst + std::stol(str2));  });
+	//ci.total = cpu_total;
 	return (ci);
 }
 

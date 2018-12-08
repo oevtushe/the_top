@@ -10,8 +10,8 @@ class	SysInfo
 		struct	Meminfo
 		{
 			unsigned long int available;
-			unsigned long int buffers;
-			unsigned long int cached;
+			unsigned long int buffer;
+			unsigned long int cache;
 			unsigned long int sreclaimable;
 			unsigned long int mem_total;
 			unsigned long int mem_free;
@@ -45,6 +45,7 @@ class	SysInfo
 			long int	irq;
 			long int	softirq;
 			long int	steal;
+			long int	total;
 		};
 
 		SysInfo() = default;
