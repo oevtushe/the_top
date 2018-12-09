@@ -21,6 +21,7 @@ struct	Cpu_usage
 class ITop_visual
 {
 	public:
+		virtual void	display_init() const = 0;
 		virtual void	display_top_info(std::string const &, long int, int, SysInfo::Load_avg const &) const = 0;
 		virtual void	display_tasks_info(SysInfo::Tasks_count const &) const = 0;
 		virtual void	display_cpu_info(Cpu_usage const &) const = 0;

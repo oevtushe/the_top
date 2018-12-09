@@ -22,10 +22,7 @@ class	SysInfo
 		// info about single process
 		struct Procinfo
 		{
-			bool	operator==(Procinfo const &p)
-			{
-				return (p.pid == pid);
-			}
+			bool			operator==(Procinfo const &p);
 			int				pid;
 			std::string		command;
 			char			state;

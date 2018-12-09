@@ -1,5 +1,15 @@
+#include <ncurses.h>
 #include <unistd.h>
 #include "Visual_ncs.hpp"
+
+void	Visual_ncs::display_init() const
+{
+	initscr();
+	start_color();
+	curs_set(0);
+	init_color(33, 600, 600, 600);
+	init_pair(1, COLOR_BLACK, 33);
+}
 
 void	Visual_ncs::display_top_info(std::string const &cur_time, long int uptime, int nou, SysInfo::Load_avg const &avg) const
 {
@@ -33,7 +43,7 @@ void	Visual_ncs::display_cpu_info(Cpu_usage const &ci) const
 			ci.wa,
 			ci.hi,
 			ci.si,
-			ci.st);	
+			ci.st);
 }
 
 void	Visual_ncs::display_mem_info(SysInfo::Meminfo const &mi) const
@@ -69,6 +79,8 @@ void	Visual_ncs::display_procs_info(std::vector<SysInfo::Procinfo> const &pi) co
 			"%MEM",
 			"TIME+",
 			"COMMAND");
+	mvchgat(6, 0, -1, A_NORMAL, 1, NULL);
+	move(7, 0);
 	int		tck_sc = sysconf(_SC_CLK_TCK);
 	for (auto const &proc : pi)
 	{
@@ -82,10 +94,10 @@ void	Visual_ncs::display_procs_info(std::vector<SysInfo::Procinfo> const &pi) co
 				proc.mem_shared,
 				proc.state,
 				proc.pcpu,
-				proc.memp, //
-				proc.timep / (60 * tck_sc), //
-				(proc.timep % 6000) / tck_sc,
-				(proc.timep % 6000) % 100,
+				proc.memp,
+				proc.timep / (60 * tck_sc), // minutes
+				(proc.timep % 6000) / tck_sc, // seconds
+				(proc.timep % 6000) % 100, // 1/100 second
 				proc.command.c_str());
 	}
 }

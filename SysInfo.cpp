@@ -12,6 +12,11 @@
 #include <unistd.h>
 #include <utmp.h>
 
+bool	SysInfo::Procinfo::operator==(SysInfo::Procinfo const &p)
+{
+	return (p.pid == pid);
+}
+
 SysInfo::SysInfo()
 {
 	update();
@@ -77,7 +82,7 @@ std::vector<SysInfo::Procinfo>			SysInfo::_read_proc_data() const
 	return (db);
 }
 
-SysInfo::Procinfo						SysInfo::_read_proc_data_hlp(std::string const path) const //local
+SysInfo::Procinfo						SysInfo::_read_proc_data_hlp(std::string const path) const
 {
 	std::ifstream	fstat(path + "/stat");
 	std::vector<std::string> stat_data{std::istream_iterator<std::string>(fstat),
@@ -104,14 +109,14 @@ SysInfo::Procinfo						SysInfo::_read_proc_data_hlp(std::string const path) cons
 
 	unsigned long int utime = std::stoul(stat_data[13]);
 	unsigned long int stime = std::stoul(stat_data[14]);
-	pi.timep = (utime + stime);/// sysconf(_SC_CLK_TCK);
+	pi.timep = (utime + stime);
 
 	pi.memp = (static_cast<double>(pi.rss) / _mem.mem_total) * 100.0;
 	pi.cpu = utime + stime;
 	return (pi);
 }
 
-long int				SysInfo::_read_uptime() const //general
+long int				SysInfo::_read_uptime() const
 {
 	long int			up{};
 	struct sysinfo		si;
@@ -121,13 +126,12 @@ long int				SysInfo::_read_uptime() const //general
 	return (up);
 }
 
-SysInfo::Meminfo		SysInfo::_read_mem_data(std::ifstream &fmemi) const //general
+SysInfo::Meminfo		SysInfo::_read_mem_data(std::ifstream &fmemi) const
 {
 	Meminfo						mi;
 	std::vector<std::string>	mi_data{std::istream_iterator<std::string>(fmemi),
 		std::istream_iterator<std::string>()};
 
-	//mi.bc = std::stoul(mi_data[10]) + std::stoul(mi_data[67]) + std::stoul(mi_data[13]);
 	mi.mem_total = std::stoul(mi_data[1]);
 
 	unsigned long int buffer = std::stoul(mi_data[10]);
@@ -141,13 +145,10 @@ SysInfo::Meminfo		SysInfo::_read_mem_data(std::ifstream &fmemi) const //general
 	mi.available = std::stoul(mi_data[7]);
 	mi.mem_used = mi.mem_total - mi.mem_free - mi.bc;
 	mi.swap_used = mi.swap_total - mi.swap_free;
-	//unsigned long int			used{};
-	//buffers = std::stoul(mi_data[10]) + std::stoul(mi_data[13]) + std::stoul(mi_data[67]);
-	//used = ttl - free - buffers;
 	return (mi);
 }
 
-SysInfo::Load_avg	SysInfo::_read_loadavg_data(std::ifstream &flavg) const //general
+SysInfo::Load_avg	SysInfo::_read_loadavg_data(std::ifstream &flavg) const
 {
 	Load_avg					la;
 	std::vector<std::string>	raw{std::istream_iterator<std::string>(flavg),
@@ -158,7 +159,7 @@ SysInfo::Load_avg	SysInfo::_read_loadavg_data(std::ifstream &flavg) const //gene
 	return (la);
 }
 
-SysInfo::Cpuinfo				SysInfo::_read_cpu_data(std::ifstream &fstat) const //general
+SysInfo::Cpuinfo				SysInfo::_read_cpu_data(std::ifstream &fstat) const
 {
 	std::vector<std::string>	stat{std::istream_iterator<std::string>(fstat),
 										std::istream_iterator<std::string>()};
@@ -172,10 +173,6 @@ SysInfo::Cpuinfo				SysInfo::_read_cpu_data(std::ifstream &fstat) const //genera
 	ci.irq = std::stol(stat[6]);
 	ci.softirq = std::stol(stat[7]);
 	ci.steal = std::stol(stat[8]);
-
-	//long int					cpu_total = std::accumulate(stat.begin() + 1, stat.begin() + 11, 0L,
-	//		[](long int fst, std::string &str2) { return (fst + std::stol(str2));  });
-	//ci.total = cpu_total;
 	return (ci);
 }
 
@@ -208,12 +205,6 @@ std::string			SysInfo::_read_cur_time() const
 	return (buff);
 }
 
-/*
-void			SysInfo::_calc_cpu_usage()
-{
-}
-*/
-
 void			SysInfo::_calc_tasks()
 {
 	_tasks_count.total = _proc.size();
@@ -237,6 +228,5 @@ void			SysInfo::update()
 	_uptime = _read_uptime();
 	_num_of_users = _read_num_of_users();
 	_cur_time = _read_cur_time();
-	//_calc_cpu_usage();
 	_calc_tasks();
 }

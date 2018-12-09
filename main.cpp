@@ -34,6 +34,37 @@ Cpu_usage	calc_cpu_usage(SysInfo::Cpuinfo const &prev, SysInfo::Cpuinfo const &c
 	return (usage);
 }
 
+void	setup(std::vector<SysInfo::Procinfo> &prev,
+			std::vector<SysInfo::Procinfo> &cur, unsigned long int total)
+{
+		std::for_each(cur.begin(), cur.end(), [&prev,total](SysInfo::Procinfo &p){ 
+				auto it = std::find(prev.begin(), prev.end(), p);
+				if (it != prev.end())
+				{
+					p.pcpu = (static_cast<double>(p.cpu - (*it).cpu) / total) * 100.0;
+				}
+		});
+		std::sort(cur.begin(), cur.end(), [](SysInfo::Procinfo const &a, SysInfo::Procinfo const &b){
+				if (a.pcpu > b.pcpu)
+					return (1);
+				else if (a.pcpu < b.pcpu)
+					return (-1);
+				else
+					return (0);
+		});
+}
+
+void	draw_screen(Visual_ncs const &ncs, Cpu_usage const &usage,
+			std::vector<SysInfo::Procinfo> const &ccur, SysInfo const &si)
+{
+		ncs.display_top_info(si.get_curtime(), si.get_uptime(), si.get_num_of_users(), si.get_loadavg());
+		ncs.display_tasks_info(si.get_tasks_count());
+		ncs.display_cpu_info(usage);
+		ncs.display_mem_info(si.get_mem_data());
+		ncs.display_swap_info(si.get_mem_data());
+		ncs.display_procs_info(ccur);
+}
+
 int		main(void)
 {
 	SysInfo	si;
@@ -46,9 +77,7 @@ int		main(void)
 	std::vector<SysInfo::Procinfo> ccur;
 	std::vector<SysInfo::Procinfo> copy;
 
-	initscr();
-	start_color();
-	curs_set(0);
+	ncs.display_init();
 
 	while (true)
 	{
@@ -57,21 +86,10 @@ int		main(void)
 		ccur = si.get_procs_data();
 		copy = ccur;
 		usage = calc_cpu_usage(prev, cur);
-		std::for_each(ccur.begin(), ccur.end(), [&pprev,&usage](SysInfo::Procinfo &p){ 
-				auto it = std::find(pprev.begin(), pprev.end(), p);
-				if (it != pprev.end())
-				{
-					p.pcpu = (static_cast<double>(p.cpu - (*it).cpu) / usage.total) * 100.0;
-				}
-		});
-		ncs.display_top_info(si.get_curtime(), si.get_uptime(), si.get_num_of_users(), si.get_loadavg());
-		ncs.display_tasks_info(si.get_tasks_count());
-		ncs.display_cpu_info(usage);
-		ncs.display_mem_info(si.get_mem_data());
-		ncs.display_swap_info(si.get_mem_data());
-		ncs.display_procs_info(ccur);
+		setup(pprev, ccur, usage.total);
+		draw_screen(ncs, usage, ccur, si);
 		refresh();
-		sleep(1);
+		sleep(3);
 		erase();
 		prev = cur;
 		pprev = copy;
