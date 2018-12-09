@@ -68,6 +68,10 @@ namespace The_top
 		double			mem;
 	};
 
+	struct Load_avg
+	{
+	};
+
 	void	init_top_info(Top_info &ti, SysInfo const &si);
 	void	init_tasks_info(Tasks_info &ti, SysInfo const &si);
 	void	init_cpu_info();

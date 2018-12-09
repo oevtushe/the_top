@@ -12,22 +12,27 @@
 #include <unistd.h>
 #include <utmp.h>
 
+SysInfo::SysInfo()
+{
+	update();
+}
+
 std::vector<SysInfo::Procinfo> const	&SysInfo::get_procs_data() const
 {
 	return (_proc);
 }
 
-SysInfo::Cpuinfo const							&SysInfo::get_cpu_data() const
+SysInfo::Cpuinfo const					&SysInfo::get_cpu_data() const
 {
 	return (_cpu);
 }
 
-SysInfo::Meminfo const							&SysInfo::get_mem_data() const
+SysInfo::Meminfo const					&SysInfo::get_mem_data() const
 {
 	return (_mem);
 }
 
-std::array<double, 3> const				&SysInfo::get_loadavg() const
+SysInfo::Load_avg const					&SysInfo::get_loadavg() const
 {
 	return (_load_avg);
 }
@@ -45,6 +50,11 @@ long int								SysInfo::get_uptime() const
 int										SysInfo::get_num_of_users() const
 {
 	return (_num_of_users);
+}
+
+SysInfo::Tasks_count const						&SysInfo::get_tasks_count() const
+{
+	return (_tasks_count);
 }
 
 std::vector<SysInfo::Procinfo>			SysInfo::_read_proc_data() const
@@ -92,13 +102,12 @@ SysInfo::Procinfo						SysInfo::_read_proc_data_hlp(std::string const path) cons
 		throw std::logic_error("Can't lstat dir");
 	pi.user = getpwuid(st.st_uid)->pw_name;
 
-	pi.utime = std::stoul(stat_data[13]);
-	pi.stime = std::stoul(stat_data[14]);
-	//double	timep = (utime + stime) / sysconf(_SC_CLK_TCK);
+	unsigned long int utime = std::stoul(stat_data[13]);
+	unsigned long int stime = std::stoul(stat_data[14]);
+	pi.timep = (utime + stime);/// sysconf(_SC_CLK_TCK);
 
-	//double	mem = (static_cast<double>(res) / get_mem_total()) * 100.0 + 0.05;
-	//data["mem"] = std::to_string(mem);
-	//data["cpu"] = std::to_string(std::to_string(stat_data[13]) + std::to_string(stat_data[14]));
+	pi.memp = (static_cast<double>(pi.rss) / _mem.mem_total) * 100.0;
+	pi.cpu = utime + stime;
 	return (pi);
 }
 
@@ -120,26 +129,33 @@ SysInfo::Meminfo		SysInfo::_read_mem_data(std::ifstream &fmemi) const //general
 
 	//mi.bc = std::stoul(mi_data[10]) + std::stoul(mi_data[67]) + std::stoul(mi_data[13]);
 	mi.mem_total = std::stoul(mi_data[1]);
-	mi.buffer = std::stoul(mi_data[10]);
-	mi.cache = std::stoul(mi_data[13]);
-	mi.sreclaimable = std::stoul(mi_data[67]);
+
+	unsigned long int buffer = std::stoul(mi_data[10]);
+	unsigned long int cache = std::stoul(mi_data[13]);
+	unsigned long int sreclaimable = std::stoul(mi_data[67]);
+	mi.bc = buffer + cache + sreclaimable;
+
 	mi.mem_free = std::stoul(mi_data[4]);
 	mi.swap_total = std::stoul(mi_data[43]);
 	mi.swap_free = std::stoul(mi_data[46]);
 	mi.available = std::stoul(mi_data[7]);
-	//mi.used = mi.mem_total - mi.mem_free - mi.buffers; // because the world isn't perfect
+	mi.mem_used = mi.mem_total - mi.mem_free - mi.bc;
+	mi.swap_used = mi.swap_total - mi.swap_free;
 	//unsigned long int			used{};
 	//buffers = std::stoul(mi_data[10]) + std::stoul(mi_data[13]) + std::stoul(mi_data[67]);
 	//used = ttl - free - buffers;
 	return (mi);
 }
 
-std::array<double, 3>	SysInfo::_read_loadavg_data(std::ifstream &flavg) const //general
+SysInfo::Load_avg	SysInfo::_read_loadavg_data(std::ifstream &flavg) const //general
 {
+	Load_avg					la;
 	std::vector<std::string>	raw{std::istream_iterator<std::string>(flavg),
 		std::istream_iterator<std::string>()};
-	std::array<double, 3>		lavg{std::stod(raw[0]), std::stod(raw[1]), std::stod(raw[0])};
-	return (lavg);
+	la.la_1 = std::stod(raw[0]);
+	la.la_5 = std::stod(raw[1]);
+	la.la_15 = std::stod(raw[2]);
+	return (la);
 }
 
 SysInfo::Cpuinfo				SysInfo::_read_cpu_data(std::ifstream &fstat) const //general
@@ -192,6 +208,21 @@ std::string			SysInfo::_read_cur_time() const
 	return (buff);
 }
 
+/*
+void			SysInfo::_calc_cpu_usage()
+{
+}
+*/
+
+void			SysInfo::_calc_tasks()
+{
+	_tasks_count.total = _proc.size();
+	_tasks_count.running = std::count_if(_proc.begin(), _proc.end(), [](SysInfo::Procinfo const &t){ return (t.state == 'R');});
+	_tasks_count.sleeping = std::count_if(_proc.begin(), _proc.end(), [](SysInfo::Procinfo const &t){ return (t.state == 'S');});
+	_tasks_count.stopped = std::count_if(_proc.begin(), _proc.end(), [](SysInfo::Procinfo const &t){ return (t.state == 'T');});
+	_tasks_count.zombie = std::count_if(_proc.begin(), _proc.end(), [](SysInfo::Procinfo const &t){ return (t.state == 'Z');});
+}
+
 void			SysInfo::update()
 {
 	std::ifstream	fstat("/proc/stat");
@@ -206,4 +237,6 @@ void			SysInfo::update()
 	_uptime = _read_uptime();
 	_num_of_users = _read_num_of_users();
 	_cur_time = _read_cur_time();
+	//_calc_cpu_usage();
+	_calc_tasks();
 }

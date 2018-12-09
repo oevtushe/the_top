@@ -1,52 +1,62 @@
+#include <unistd.h>
 #include "Visual_ncs.hpp"
 
-Visual_ncs::display_top_info(Top_info const &ti) const
+void	Visual_ncs::display_top_info(std::string const &cur_time, long int uptime, int nou, SysInfo::Load_avg const &avg) const
 {
 	mvprintw(0, 0, "the_top - %s up %2ld:%ld, %2d user,  load average: %.2f, %.2f, %.2f\n",
-			ti.curtime.c_str(),
-			ti.uptime / 3600, // hours
-			(ti.uptime % 3600) / 60, // minutes
-			ti.num_of_users,
-			ti.la_1,
-			ti.la_5,
-			ti.la_15);
+			cur_time.c_str(),
+			uptime / 3600, // hours
+			(uptime % 3600) / 60, // minutes
+			nou,
+			avg.la_1,
+			avg.la_5,
+			avg.la_15);
 }
 
-Visual_ncs::display_tasks_info(Tasks_info const &ti) const
+void	Visual_ncs::display_tasks_info(SysInfo::Tasks_count const &tc) const
 {
 	mvprintw(1, 0, "Tasks: %3d total, %3d running, %3d sleeping, %3d stopped, %3d zombie\n",
-			ti.total,
-			ti.running,
-			ti.sleeping,
-			ti.stopped,
-			ti.zombie);
+			tc.total,
+			tc.running,
+			tc.sleeping,
+			tc.stopped,
+			tc.zombie);
 }
 
-Visual_ncs::display_cpu_info(Cpu_info const &ci) const
+void	Visual_ncs::display_cpu_info(Cpu_usage const &ci) const
 {
+	mvprintw(2, 0, "%%Cpu(s):%5.1f us,%5.1f sy,%5.1f ni,%5.1f id,%5.1f wa,%5.1f hi,%5.1f si,%5.1f st\n",
+			ci.us,
+			ci.sy,
+			ci.ni,
+			ci.id,
+			ci.wa,
+			ci.hi,
+			ci.si,
+			ci.st);	
 }
 
-Visual_ncs::display_mem_info(Mem_info const &mi) const
+void	Visual_ncs::display_mem_info(SysInfo::Meminfo const &mi) const
 {
-	mvprintw(3, 0, "KiB Mem : %8.8lu total, %8.8lu free, %8.8lu used, %8.8lu buff/cache\n",
-			mi.total,
-			mi.free,
-			mi.used,
-			mi.buffers);
+	mvprintw(3, 0, "KiB Mem : %8lu total, %8lu free, %8lu used, %8lu buff/cache\n",
+			mi.mem_total,
+			mi.mem_free,
+			mi.mem_used,
+			mi.bc);
 }
 
-Visual_ncs::display_swap_info(Swap_info const &si) const
+void	Visual_ncs::display_swap_info(SysInfo::Meminfo const &mi) const
 {
-	mvprintw(4, 0, "KiB Swap: %8lu total, %8lu free, %8lu used. %8.8lu avail Mem\n",
-			si.total,
-			si.free,
-			si.total - memi.free,
-			si.available);
+	mvprintw(4, 0, "KiB Swap: %8lu total, %8lu free, %8lu used. %8lu avail Mem\n",
+			mi.swap_total,
+			mi.swap_free,
+			mi.swap_used,
+			mi.available);
 }
 
-Visual_ncs::display_procs_info(Proc_info const &pi) const
+void	Visual_ncs::display_procs_info(std::vector<SysInfo::Procinfo> const &pi) const
 {
-	mvprintw(5, 0, "%5.5s %-9.9s %2.2s %3.3s %7.7s %7.7s %7.7s %1.1s %4.4s %4.4s %9.9s %.7s\n",
+	mvprintw(6, 0, "%5.5s %-9.9s %2.2s %3.3s %7.7s %6.6s %6.6s %1.1s %4.4s %4.4s %9.9s %.7s\n",
 			"PID",
 			"USER",
 			"PR",
@@ -59,17 +69,23 @@ Visual_ncs::display_procs_info(Proc_info const &pi) const
 			"%MEM",
 			"TIME+",
 			"COMMAND");
-	printw("%5d %-9.9s %2d %3d %7d %7d %7d %c %4.4s %4d %9d %-s\n",
-			pi.pid,
-			pi.user.c_str(),
-			pi.priority,
-			pi.nice,
-			pi.vsize,
-			pi.rss,
-			pi.mem_shared,
-			pi.state,
-			"%CPU",
-			0, //
-			0, //
-			pi.command.c_str());
+	int		tck_sc = sysconf(_SC_CLK_TCK);
+	for (auto const &proc : pi)
+	{
+		printw("%5d %-9.9s %2d %3d %7d %6d %6d %c %4.1f %4.1f %3.1lu:%.2lu.%.2lu %-s\n",
+				proc.pid,
+				proc.user.c_str(),
+				proc.priority,
+				proc.nice,
+				proc.vsize,
+				proc.rss,
+				proc.mem_shared,
+				proc.state,
+				proc.pcpu,
+				proc.memp, //
+				proc.timep / (60 * tck_sc), //
+				(proc.timep % 6000) / tck_sc,
+				(proc.timep % 6000) % 100,
+				proc.command.c_str());
+	}
 }
