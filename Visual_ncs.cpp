@@ -4,16 +4,27 @@
 
 Visual_ncs::Visual_ncs()
 {
-	initscr();
-	start_color();
-	curs_set(0);
-	init_color(33, 600, 600, 600);
-	init_pair(1, COLOR_BLACK, 33);
+	::initscr();
+	::start_color();
+	::curs_set(0);
+	::nodelay(stdscr, 1);
+	::init_color(33, 600, 600, 600);
+	::init_pair(1, COLOR_BLACK, 33);
 }
 
 Visual_ncs::~Visual_ncs()
 {
-	endwin();
+	::endwin();
+}
+
+void	Visual_ncs::clean_screen() const
+{
+	::erase();
+}
+
+void	Visual_ncs::refresh() const
+{
+	::refresh();
 }
 
 void	Visual_ncs::display_top_info(std::string const &cur_time, long int uptime, int nou, SysInfo::Load_avg const &avg) const
@@ -38,7 +49,7 @@ void	Visual_ncs::display_tasks_info(SysInfo::Tasks_count const &tc) const
 			tc.zombie);
 }
 
-void	Visual_ncs::display_cpu_info(Cpu_usage const &ci) const
+void	Visual_ncs::display_cpu_info(The_top::Cpu_usage const &ci) const
 {
 	mvprintw(2, 0, "%%Cpu(s):%5.1f us,%5.1f sy,%5.1f ni,%5.1f id,%5.1f wa,%5.1f hi,%5.1f si,%5.1f st\n",
 			ci.us,
@@ -69,7 +80,7 @@ void	Visual_ncs::display_swap_info(SysInfo::Meminfo const &mi) const
 			mi.available);
 }
 
-void	Visual_ncs::display_procs_info(std::vector<SysInfo::Procinfo> const &pi) const
+void	Visual_ncs::display_procs_info(std::vector<The_top::Procinfo> const &pi) const
 {
 	mvprintw(6, 0, "%5.5s %-9.9s %2.2s %3.3s %7.7s %6.6s %6.6s %1.1s %4.4s %4.4s %9.9s %.7s\n",
 			"PID",
@@ -98,7 +109,7 @@ void	Visual_ncs::display_procs_info(std::vector<SysInfo::Procinfo> const &pi) co
 				proc.rss,
 				proc.mem_shared,
 				proc.state,
-				proc.pcpu,
+				proc.cpu,
 				proc.memp,
 				proc.timep / (60 * tck_sc), // minutes
 				(proc.timep % 6000) / tck_sc, // seconds

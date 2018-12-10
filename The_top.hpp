@@ -2,29 +2,11 @@
 # define THE_TOP_HPP
 
 # include "SysInfo.hpp"
+# include <string>
 
 namespace The_top
 {
-	struct	Top_info
-	{
-		std::string	cur_time;
-		long int	uptime;
-		int			num_of_users;
-		double		la_1;
-		double		la_5;
-		double		la_15;
-	};
-
-	struct	Tasks_info
-	{
-		int	total;
-		int	running;
-		int	sleeping;
-		int	stopped;
-		int	zombie;
-	};
-
-	struct	Cpu_info
+	struct	Cpu_usage
 	{
 		double	us;
 		double	sy;
@@ -34,49 +16,36 @@ namespace The_top
 		double	hi;
 		double	si;
 		double	st;
+		double	total;
 	};
 
-	struct	Mem_info
-	{
-		unsigned long int	total;
-		unsigned long int	free;
-		unsigned long int	bc;
-		unsigned long int	used;
-	};
+	/*
+	** Here field 'cpu' is a percent of cpu usage
+	** No more difference from SysInfo::Procinfo_raw
+	*/
 
-	struct	Swap_info
+	struct Procinfo
 	{
-		unsigned long int	total;
-		unsigned long int	free;
-		unsigned long int	used;
-		unsigned long int	avail;
-	};
-
-	struct Proc_info
-	{
+		friend bool		operator==(
+			Procinfo const &a, Procinfo const &b);
 		int				pid;
 		std::string		command;
 		char			state;
 		long int		nice;
 		long int		priority;
 		long int		vsize;
-		long int		res;
-		long int		shared;
+		long int		rss;
+		long int		mem_shared;
 		std::string		user;
-		long int		timep;
+		unsigned long	timep;
+		double			memp;
 		double			cpu;
-		double			mem;
 	};
 
-	struct Load_avg
-	{
-	};
+The_top::Cpu_usage				calc_cpu_usage(SysInfo::Cpuinfo const &prev,
+			SysInfo::Cpuinfo const &cur);
+std::vector<The_top::Procinfo>	get_procinfo(std::vector<SysInfo::Procinfo_raw> const &prev,
+		std::vector<SysInfo::Procinfo_raw> const &cur, unsigned long int total);
 
-	void	init_top_info(Top_info &ti, SysInfo const &si);
-	void	init_tasks_info(Tasks_info &ti, SysInfo const &si);
-	void	init_cpu_info();
-	void	init_mem_info(Mem_info &ti, SysInfo const &si);
-	void	init_swap_info(Swap_info &ti, SysInfo const &si);
-	void	init_procs_info(std::vector<Proc_info> &pi, SysInfo const &si);
 }
 #endif
