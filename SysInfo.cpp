@@ -12,8 +12,8 @@
 #include <unistd.h>
 #include <utmp.h>
 
-bool										operator==(SysInfo::Procinfo_raw const &a,
-												SysInfo::Procinfo_raw const &b)
+bool										operator==(ISys::Procinfo_raw const &a,
+												ISys::Procinfo_raw const &b)
 {
 	return (a.pid == b.pid);
 }
@@ -23,22 +23,22 @@ SysInfo::SysInfo()
 	update();
 }
 
-std::vector<SysInfo::Procinfo_raw> const	&SysInfo::get_procs_data() const
+std::vector<ISys::Procinfo_raw> const	&SysInfo::get_procs_data() const
 {
 	return (_proc);
 }
 
-SysInfo::Cpuinfo const						&SysInfo::get_cpu_data() const
+ISys::Cpuinfo const						&SysInfo::get_cpu_data() const
 {
 	return (_cpu);
 }
 
-SysInfo::Meminfo const						&SysInfo::get_mem_data() const
+ISys::Meminfo const						&SysInfo::get_mem_data() const
 {
 	return (_mem);
 }
 
-SysInfo::Load_avg const						&SysInfo::get_loadavg() const
+ISys::Load_avg const						&SysInfo::get_loadavg() const
 {
 	return (_load_avg);
 }
@@ -58,18 +58,18 @@ int											SysInfo::get_num_of_users() const
 	return (_num_of_users);
 }
 
-SysInfo::Tasks_count const					&SysInfo::get_tasks_count() const
+ISys::Tasks_count const					&SysInfo::get_tasks_count() const
 {
 	return (_tasks_count);
 }
 
-std::vector<SysInfo::Procinfo_raw>			SysInfo::_read_proc_data() const
+std::vector<ISys::Procinfo_raw>			SysInfo::_read_proc_data() const
 {
-	DIR							*dir;
-	struct dirent				*runner;
-	std::vector<Procinfo_raw>	db;
-	std::string					proc{"/proc/"};
-	std::string					wrap;
+	DIR								*dir;
+	struct dirent					*runner;
+	std::vector<ISys::Procinfo_raw>	db;
+	std::string						proc{"/proc/"};
+	std::string						wrap;
 
 	if (!(dir = opendir(proc.c_str())))
 		throw std::logic_error("Can't open proc");
@@ -83,12 +83,12 @@ std::vector<SysInfo::Procinfo_raw>			SysInfo::_read_proc_data() const
 	return (db);
 }
 
-SysInfo::Procinfo_raw						SysInfo::_read_proc_data_hlp(std::string const path) const
+ISys::Procinfo_raw						SysInfo::_read_proc_data_hlp(std::string const path) const
 {
 	std::ifstream				fstat(path + "/stat");
 	std::vector<std::string>	stat_data{std::istream_iterator<std::string>(fstat),
 		std::istream_iterator<std::string>()};
-	Procinfo_raw				pi{};
+	ISys::Procinfo_raw			pi{};
 
 	pi.pid = std::stoi(stat_data[0]);
 	pi.command = stat_data[1];
@@ -127,9 +127,9 @@ long int									SysInfo::_read_uptime() const
 	return (up);
 }
 
-SysInfo::Meminfo							SysInfo::_read_mem_data(std::ifstream &fmemi) const
+ISys::Meminfo							SysInfo::_read_mem_data(std::ifstream &fmemi) const
 {
-	Meminfo						mi;
+	ISys::Meminfo				mi;
 	std::vector<std::string>	mi_data{std::istream_iterator<std::string>(fmemi),
 		std::istream_iterator<std::string>()};
 
@@ -149,9 +149,9 @@ SysInfo::Meminfo							SysInfo::_read_mem_data(std::ifstream &fmemi) const
 	return (mi);
 }
 
-SysInfo::Load_avg							SysInfo::_read_loadavg_data(std::ifstream &flavg) const
+ISys::Load_avg							SysInfo::_read_loadavg_data(std::ifstream &flavg) const
 {
-	Load_avg					la;
+	ISys::Load_avg				la;
 	std::vector<std::string>	raw{std::istream_iterator<std::string>(flavg),
 		std::istream_iterator<std::string>()};
 	la.la_1 = std::stod(raw[0]);
@@ -160,11 +160,11 @@ SysInfo::Load_avg							SysInfo::_read_loadavg_data(std::ifstream &flavg) const
 	return (la);
 }
 
-SysInfo::Cpuinfo							SysInfo::_read_cpu_data(std::ifstream &fstat) const
+ISys::Cpuinfo							SysInfo::_read_cpu_data(std::ifstream &fstat) const
 {
 	std::vector<std::string>	stat{std::istream_iterator<std::string>(fstat),
 										std::istream_iterator<std::string>()};
-	Cpuinfo						ci{};
+	ISys::Cpuinfo				ci{};
 
 	ci.user = std::stol(stat[1]);
 	ci.nice = std::stol(stat[2]);

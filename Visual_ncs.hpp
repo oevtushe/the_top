@@ -21,4 +21,5 @@ class Visual_ncs : public ITop_visual
 		void	display_swap_info(SysInfo::Meminfo const &) const;
 		void	display_procs_info(std::vector<The_top::Procinfo> const &) const;
 };
+
 #endif

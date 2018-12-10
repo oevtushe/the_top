@@ -4,7 +4,6 @@
 #include <iostream>
 #include <unistd.h>
 
-#include <ncurses.h>
 static void	draw_screen(Visual_ncs const &ncs, The_top::Cpu_usage const &usage,
 				std::vector<The_top::Procinfo> const &ccur, SysInfo const &si)
 {
