@@ -4,6 +4,7 @@
 #include <iostream>
 #include <unistd.h>
 
+#include <ncurses.h>
 static void	draw_screen(Visual_ncs const &ncs, The_top::Cpu_usage const &usage,
 				std::vector<The_top::Procinfo> const &ccur, SysInfo const &si)
 {
@@ -27,8 +28,9 @@ int		main(void)
 	std::vector<SysInfo::Procinfo_raw> 	ccur;
 	std::vector<The_top::Procinfo>		procinfo;
 
-	while (true)
+	do
 	{
+		ncs.clean_screen();
 		si.update();
 		cur = si.get_cpu_data();
 		ccur = si.get_procs_data();
@@ -36,10 +38,8 @@ int		main(void)
 		procinfo = The_top::get_procinfo(pprev, ccur, usage.total);
 		draw_screen(ncs, usage, procinfo, si);
 		ncs.refresh();
-		sleep(3);
-		ncs.clean_screen();
 		prev = cur;
 		pprev = ccur;
-	}
+	} while ((ncs.read_ch() != 033));
 	return (0);
 }

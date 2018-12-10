@@ -7,7 +7,7 @@ Visual_ncs::Visual_ncs()
 	::initscr();
 	::start_color();
 	::curs_set(0);
-	::nodelay(stdscr, 1);
+	::halfdelay(30);
 	::init_color(33, 600, 600, 600);
 	::init_pair(1, COLOR_BLACK, 33);
 }
@@ -27,9 +27,14 @@ void	Visual_ncs::refresh() const
 	::refresh();
 }
 
+int		Visual_ncs::read_ch() const
+{
+	return (::getch());
+}
+
 void	Visual_ncs::display_top_info(std::string const &cur_time, long int uptime, int nou, SysInfo::Load_avg const &avg) const
 {
-	mvprintw(0, 0, "the_top - %s up %2ld:%ld, %2d user,  load average: %.2f, %.2f, %.2f\n",
+	mvprintw(0, 0, "the_top - %s up %2ld:%ld, %2d users,  load average: %.2f, %.2f, %.2f\n",
 			cur_time.c_str(),
 			uptime / 3600, // hours
 			(uptime % 3600) / 60, // minutes

@@ -13,6 +13,7 @@ class Visual_ncs : public ITop_visual
 		Visual_ncs(Visual_ncs &&) = delete;
 		void	refresh() const;
 		void	clean_screen() const;
+		int		read_ch() const;
 		void	display_top_info(std::string const &, long int, int, SysInfo::Load_avg const &) const;
 		void	display_tasks_info(SysInfo::Tasks_count const &) const;
 		void	display_cpu_info(The_top::Cpu_usage const &) const;
