@@ -37,21 +37,22 @@ Cpu_usage	calc_cpu_usage(SysInfo::Cpuinfo const &prev, SysInfo::Cpuinfo const &c
 void	setup(std::vector<SysInfo::Procinfo> &prev,
 			std::vector<SysInfo::Procinfo> &cur, unsigned long int total)
 {
-		std::for_each(cur.begin(), cur.end(), [&prev,total](SysInfo::Procinfo &p){ 
-				auto it = std::find(prev.begin(), prev.end(), p);
-				if (it != prev.end())
-				{
-					p.pcpu = (static_cast<double>(p.cpu - (*it).cpu) / total) * 100.0;
-				}
-		});
-		std::sort(cur.begin(), cur.end(), [](SysInfo::Procinfo const &a, SysInfo::Procinfo const &b){
-				if (a.pcpu > b.pcpu)
-					return (1);
-				else if (a.pcpu < b.pcpu)
-					return (-1);
-				else
-					return (0);
-		});
+	for (auto &p : cur)
+	{
+		auto it = std::find(prev.begin(), prev.end(), p);
+		if (it != prev.end())
+		{
+			p.pcpu = (static_cast<double>(p.cpu - (*it).cpu) / total) * 100.0;
+		}
+	}
+	std::sort(cur.begin(), cur.end(), [](SysInfo::Procinfo const &a, SysInfo::Procinfo const &b){
+			if (a.pcpu > b.pcpu)
+				return (1);
+			else if (a.pcpu < b.pcpu)
+				return (-1);
+			else
+				return (0);
+	});
 }
 
 void	draw_screen(Visual_ncs const &ncs, Cpu_usage const &usage,
@@ -67,17 +68,15 @@ void	draw_screen(Visual_ncs const &ncs, Cpu_usage const &usage,
 
 int		main(void)
 {
-	SysInfo	si;
-	SysInfo	prev_si;
-	Visual_ncs	ncs;
-	SysInfo::Cpuinfo	prev{};
-	SysInfo::Cpuinfo	cur;
-	Cpu_usage	usage{};
-	std::vector<SysInfo::Procinfo> pprev;
-	std::vector<SysInfo::Procinfo> ccur;
-	std::vector<SysInfo::Procinfo> copy;
-
-	ncs.display_init();
+	SysInfo							si;
+	SysInfo							prev_si;
+	Visual_ncs						ncs;
+	SysInfo::Cpuinfo				prev{};
+	SysInfo::Cpuinfo				cur;
+	Cpu_usage						usage{};
+	std::vector<SysInfo::Procinfo>	pprev;
+	std::vector<SysInfo::Procinfo> 	ccur;
+	std::vector<SysInfo::Procinfo> 	copy;
 
 	while (true)
 	{
@@ -94,7 +93,5 @@ int		main(void)
 		prev = cur;
 		pprev = copy;
 	}
-	getch();
-	endwin();
 	return (0);
 }

@@ -2,13 +2,18 @@
 #include <unistd.h>
 #include "Visual_ncs.hpp"
 
-void	Visual_ncs::display_init() const
+Visual_ncs::Visual_ncs()
 {
 	initscr();
 	start_color();
 	curs_set(0);
 	init_color(33, 600, 600, 600);
 	init_pair(1, COLOR_BLACK, 33);
+}
+
+Visual_ncs::~Visual_ncs()
+{
+	endwin();
 }
 
 void	Visual_ncs::display_top_info(std::string const &cur_time, long int uptime, int nou, SysInfo::Load_avg const &avg) const

@@ -20,6 +20,7 @@ class	SysInfo
 		};
 
 		// info about single process
+		// write new for top ?
 		struct Procinfo
 		{
 			bool			operator==(Procinfo const &p);
