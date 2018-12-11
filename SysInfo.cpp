@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <utmp.h>
 
-bool										operator==(ISys::Procinfo_raw const &a,
+bool									operator==(ISys::Procinfo_raw const &a,
 												ISys::Procinfo_raw const &b)
 {
 	return (a.pid == b.pid);
@@ -38,22 +38,22 @@ ISys::Meminfo const						&SysInfo::get_mem_data() const
 	return (_mem);
 }
 
-ISys::Load_avg const						&SysInfo::get_loadavg() const
+ISys::Load_avg const					&SysInfo::get_loadavg() const
 {
 	return (_load_avg);
 }
 
-std::string const							&SysInfo::get_curtime() const
+std::string const						&SysInfo::get_curtime() const
 {
 	return (_cur_time);
 }
 
-long int									SysInfo::get_uptime() const
+long int								SysInfo::get_uptime() const
 {
 	return (_uptime);
 }
 
-int											SysInfo::get_num_of_users() const
+int										SysInfo::get_num_of_users() const
 {
 	return (_num_of_users);
 }
@@ -117,7 +117,7 @@ ISys::Procinfo_raw						SysInfo::_read_proc_data_hlp(std::string const path) con
 	return (pi);
 }
 
-long int									SysInfo::_read_uptime() const
+long int								SysInfo::_read_uptime() const
 {
 	long int		up{};
 	struct sysinfo	si;
@@ -177,7 +177,7 @@ ISys::Cpuinfo							SysInfo::_read_cpu_data(std::ifstream &fstat) const
 	return (ci);
 }
 
-int											SysInfo::_read_num_of_users() const
+int										SysInfo::_read_num_of_users() const
 {
 	FILE		*f{};
 	struct utmp tmp;
@@ -191,7 +191,7 @@ int											SysInfo::_read_num_of_users() const
 	return (cnt);
 }
 
-std::string									SysInfo::_read_cur_time() const
+std::string								SysInfo::_read_cur_time() const
 {
 	char		buff[9];
 	time_t		tloc;
@@ -206,7 +206,7 @@ std::string									SysInfo::_read_cur_time() const
 	return (buff);
 }
 
-void										SysInfo::_calc_tasks()
+void									SysInfo::_calc_tasks()
 {
 	_tasks_count.total = _proc.size();
 	_tasks_count.running = std::count_if(_proc.begin(), _proc.end(),
@@ -219,7 +219,7 @@ void										SysInfo::_calc_tasks()
 			[](SysInfo::Procinfo_raw const &t){ return (t.state == 'Z');});
 }
 
-void										SysInfo::update()
+void									SysInfo::update()
 {
 	std::ifstream	fstat("/proc/stat");
 	std::ifstream	floadavg("/proc/loadavg");

@@ -2,6 +2,11 @@
 #include <unistd.h>
 #include "Visual_ncs.hpp"
 
+bool	operator==(IVisual::Procinfo const &a, IVisual::Procinfo const &b)
+{
+	return (a.pid == b.pid);
+}
+
 Visual_ncs::Visual_ncs()
 {
 	::initscr();
@@ -32,7 +37,7 @@ int		Visual_ncs::read_ch() const
 	return (::getch());
 }
 
-void	Visual_ncs::display_top_info(std::string const &cur_time, long int uptime, int nou, SysInfo::Load_avg const &avg) const
+void	Visual_ncs::display_top_info(std::string const &cur_time, long int uptime, int nou, IVisual::Load_avg const &avg) const
 {
 	mvprintw(0, 0, "the_top - %s up %2ld:%ld, %2d users,  load average: %.2f, %.2f, %.2f\n",
 			cur_time.c_str(),
@@ -44,7 +49,7 @@ void	Visual_ncs::display_top_info(std::string const &cur_time, long int uptime, 
 			avg.la_15);
 }
 
-void	Visual_ncs::display_tasks_info(SysInfo::Tasks_count const &tc) const
+void	Visual_ncs::display_tasks_info(IVisual::Tasks_count const &tc) const
 {
 	mvprintw(1, 0, "Tasks: %3d total, %3d running, %3d sleeping, %3d stopped, %3d zombie\n",
 			tc.total,
@@ -54,7 +59,7 @@ void	Visual_ncs::display_tasks_info(SysInfo::Tasks_count const &tc) const
 			tc.zombie);
 }
 
-void	Visual_ncs::display_cpu_info(The_top::Cpu_usage const &ci) const
+void	Visual_ncs::display_cpu_info(IVisual::Cpu_usage const &ci) const
 {
 	mvprintw(2, 0, "%%Cpu(s):%5.1f us,%5.1f sy,%5.1f ni,%5.1f id,%5.1f wa,%5.1f hi,%5.1f si,%5.1f st\n",
 			ci.us,
@@ -67,7 +72,7 @@ void	Visual_ncs::display_cpu_info(The_top::Cpu_usage const &ci) const
 			ci.st);
 }
 
-void	Visual_ncs::display_mem_info(SysInfo::Meminfo const &mi) const
+void	Visual_ncs::display_mem_info(IVisual::Meminfo const &mi) const
 {
 	mvprintw(3, 0, "KiB Mem : %8lu total, %8lu free, %8lu used, %8lu buff/cache\n",
 			mi.mem_total,
@@ -76,7 +81,7 @@ void	Visual_ncs::display_mem_info(SysInfo::Meminfo const &mi) const
 			mi.bc);
 }
 
-void	Visual_ncs::display_swap_info(SysInfo::Meminfo const &mi) const
+void	Visual_ncs::display_swap_info(IVisual::Meminfo const &mi) const
 {
 	mvprintw(4, 0, "KiB Swap: %8lu total, %8lu free, %8lu used. %8lu avail Mem\n",
 			mi.swap_total,
@@ -85,7 +90,7 @@ void	Visual_ncs::display_swap_info(SysInfo::Meminfo const &mi) const
 			mi.available);
 }
 
-void	Visual_ncs::display_procs_info(std::vector<The_top::Procinfo> const &pi) const
+void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi) const
 {
 	mvprintw(6, 0, "%5.5s %-9.9s %2.2s %3.3s %7.7s %6.6s %6.6s %1.1s %4.4s %4.4s %9.9s %.7s\n",
 			"PID",
