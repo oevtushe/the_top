@@ -65,12 +65,7 @@ static std::vector<IVisual::Procinfo>	get_procinfo(std::vector<SysInfo::Procinfo
 		procinfo.push_back(pi);
 	}
 	std::sort(procinfo.begin(), procinfo.end(), [](IVisual::Procinfo const &a, IVisual::Procinfo const &b){
-			if (a.cpu > b.cpu)
-				return (1);
-			else if (a.cpu < b.cpu)
-				return (-1);
-			else
-				return (0);
+			return (a.cpu > b.cpu);
 	});
 	return (procinfo);
 }
