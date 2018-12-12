@@ -51,13 +51,13 @@ class IVisual : public IIntermediate
 		virtual			~IVisual() {}
 		virtual	void	refresh() const = 0;
 		virtual void	clean_screen() const = 0;
-		virtual int		read_ch() const = 0;
+		virtual int		read_ch() = 0;
 		virtual void	display_top_info(std::string const &, long int, int,
 							Load_avg const &) const = 0;
 		virtual void	display_tasks_info(Tasks_count const &) const = 0;
 		virtual void	display_cpu_info(Cpu_usage const &) const = 0;
 		virtual void	display_mem_info(Meminfo const &) const = 0;
 		virtual void	display_swap_info(Meminfo const &) const = 0;
-		virtual void	display_procs_info(std::vector<Procinfo> const &) const = 0;
+		virtual void	display_procs_info(std::vector<Procinfo> const &) = 0;
 };
 #endif

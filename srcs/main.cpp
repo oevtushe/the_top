@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <algorithm>
 #include <memory>
+#include <fstream>//
 
 static IVisual::Cpu_usage				calc_cpu_usage(IVisual::Cpuinfo const &prev, IVisual::Cpuinfo const &cur)
 {

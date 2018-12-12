@@ -7,10 +7,11 @@ bool	operator==(IVisual::Procinfo const &a, IVisual::Procinfo const &b)
 	return (a.pid == b.pid);
 }
 
-Visual_ncs::Visual_ncs()
+Visual_ncs::Visual_ncs() : _offset{}
 {
 	::initscr();
 	::start_color();
+	::keypad(stdscr, TRUE);
 	::curs_set(0);
 	::halfdelay(30);
 	::init_color(33, 600, 600, 600);
@@ -32,9 +33,22 @@ void	Visual_ncs::refresh() const
 	::refresh();
 }
 
-int		Visual_ncs::read_ch() const
+int		Visual_ncs::read_ch()
 {
-	return (::getch());
+	int		c{};
+
+	switch((c = ::getch()))
+	{
+		case KEY_DOWN:
+			++_offset;
+			break ;
+		case KEY_UP:
+			if (_offset)
+				--_offset;
+			break ;
+	}
+	::flushinp();
+	return (c);
 }
 
 void	Visual_ncs::display_top_info(std::string const &cur_time, long int uptime, int nou, IVisual::Load_avg const &avg) const
@@ -90,7 +104,7 @@ void	Visual_ncs::display_swap_info(IVisual::Meminfo const &mi) const
 			mi.available);
 }
 
-void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi) const
+void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
 {
 	mvprintw(6, 0, "%5.5s %-9.9s %2.2s %3.3s %7.7s %6.6s %6.6s %1.1s %4.4s %4.4s %9.9s %.7s\n",
 			"PID",
@@ -108,22 +122,28 @@ void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi) co
 	mvchgat(6, 0, -1, A_NORMAL, 1, NULL);
 	move(7, 0);
 	int		tck_sc = sysconf(_SC_CLK_TCK);
-	for (auto const &proc : pi)
+	int		sz = pi.size();
+	int		max_show = LINES - 7;
+	if (_offset > sz)
+		_offset = sz;
+	if (sz - _offset > max_show)
+		sz = max_show + _offset;
+	for (int i = _offset; i < sz; ++i)
 	{
 		printw("%5d %-9.9s %2d %3d %7d %6d %6d %c %4.1f %4.1f %3.1lu:%.2lu.%.2lu %-s\n",
-				proc.pid,
-				proc.user.c_str(),
-				proc.priority,
-				proc.nice,
-				proc.vsize,
-				proc.rss,
-				proc.mem_shared,
-				proc.state,
-				proc.cpu,
-				proc.memp,
-				proc.timep / (60 * tck_sc), // minutes
-				(proc.timep % 6000) / tck_sc, // seconds
-				(proc.timep % 6000) % 100, // 1/100 second
-				proc.command.c_str());
+				pi[i].pid,
+				pi[i].user.c_str(),
+				pi[i].priority,
+				pi[i].nice,
+				pi[i].vsize,
+				pi[i].rss,
+				pi[i].mem_shared,
+				pi[i].state,
+				pi[i].cpu,
+				pi[i].memp,
+				pi[i].timep / (60 * tck_sc), // minutes
+				(pi[i].timep % 6000) / tck_sc, // seconds
+				(pi[i].timep % 6000) % 100, // 1/100 second
+				pi[i].command.c_str());
 	}
 }
