@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.4)
+cmake_minimum_required (VERSION 3.1.3)
 
 project (the_top)
 
@@ -11,7 +11,7 @@ include_directories (${INCLUDE_DIRS} ${CURSES_INCLUDE_DIR})
 
 set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -g")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
 
 add_library (SysInfo SHARED ${SRCS_DIR}/SysInfo.cpp ${SRCS_DIR}/ISys.cpp)
 add_library (Visual_ncs SHARED ${SRCS_DIR}/Visual_ncs.cpp)

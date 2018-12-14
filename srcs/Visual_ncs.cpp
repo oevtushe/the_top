@@ -130,10 +130,10 @@ void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
 		sz = max_show + _offset;
 	for (int i = _offset; i < sz; ++i)
 	{
-		printw("%5d %-9.9s %2d %3d %7d %6d %6d %c %4.1f %4.1f %3.1lu:%.2lu.%.2lu %-s\n",
+		printw("%5d %-9.9s %2.3s %3d %7d %6d %6d %c %4.1f %4.1f %3.1lu:%.2lu.%.2lu %-s\n",
 				pi[i].pid,
 				pi[i].user.c_str(),
-				pi[i].priority,
+				pi[i].priority < -99 ? "rt" : std::to_string(pi[i].priority).c_str(),
 				pi[i].nice,
 				pi[i].vsize,
 				pi[i].rss,

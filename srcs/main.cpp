@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <algorithm>
 #include <memory>
-#include <fstream>//
 
 static IVisual::Cpu_usage				calc_cpu_usage(IVisual::Cpuinfo const &prev, IVisual::Cpuinfo const &cur)
 {
@@ -18,7 +17,8 @@ static IVisual::Cpu_usage				calc_cpu_usage(IVisual::Cpuinfo const &prev, IVisua
 	usage.hi = cur.irq - prev.irq;
 	usage.si = cur.softirq - prev.softirq;
 	usage.st = cur.steal - prev.steal;
-	usage.total = usage.us + usage.sy + usage.ni + usage.id + usage.wa + usage.hi + usage.si + usage.st;
+	usage.total = usage.us + usage.sy + usage.ni +
+		usage.id + usage.wa + usage.hi + usage.si + usage.st;
 	usage.us = (static_cast<double>(usage.us) / usage.total) * 100.0;
 	usage.sy = (static_cast<double>(usage.sy) / usage.total) * 100.0;
 	usage.ni = (static_cast<double>(usage.ni) / usage.total) * 100.0;
@@ -31,7 +31,7 @@ static IVisual::Cpu_usage				calc_cpu_usage(IVisual::Cpuinfo const &prev, IVisua
 }
 
 static std::vector<IVisual::Procinfo>	get_procinfo(std::vector<SysInfo::Procinfo_raw> const &prev,
-		std::vector<SysInfo::Procinfo_raw> const &cur, unsigned long int total)
+		std::vector<SysInfo::Procinfo_raw> const &cur, long int total)
 {
 	std::vector<IVisual::Procinfo>	procinfo;
 
@@ -55,18 +55,20 @@ static std::vector<IVisual::Procinfo>	get_procinfo(std::vector<SysInfo::Procinfo
 		// to calculate %CPU usage.
 		// New snapshot may contain new processes, so we need to search
 		// for those which exists in both and get difference in cpu.
-		//
-		// "Do not optimize till you have no need to" - Someone said
 
 		auto it = std::find(prev.begin(), prev.end(), proc);
 		if (it != prev.end())
-			pi.cpu = (static_cast<double>(proc.cpu - (*it).cpu) / total) * 100.0;
+			pi.cpu = (static_cast<double>((proc.cpu - it->cpu) *
+						sysconf(_SC_NPROCESSORS_ONLN)) / total) * 100.0;
 		else
 			pi.cpu = (static_cast<double>(proc.cpu) / total) * 100.0;
 		procinfo.push_back(pi);
 	}
 	std::sort(procinfo.begin(), procinfo.end(), [](IVisual::Procinfo const &a, IVisual::Procinfo const &b){
-			return (a.cpu > b.cpu);
+			if (a.cpu >= 0.05 || b.cpu >= 0.05)
+				return (a.cpu > b.cpu);
+			else
+				return (a.pid < b.pid);
 	});
 	return (procinfo);
 }

@@ -6,7 +6,6 @@
 #include <iterator>
 #include <pwd.h>
 #include <numeric>
-#include <math.h>
 #include <sys/stat.h>
 #include <sys/sysinfo.h>
 #include <unistd.h>
@@ -104,8 +103,8 @@ ISys::Meminfo							SysInfo::_read_mem_data() const
 
 	unsigned long int buffer = std::stoul(mi_data[10]);
 	unsigned long int cache = std::stoul(mi_data[13]);
-	unsigned long int sreclaimable = std::stoul(mi_data[67]);
-	mi.bc = buffer + cache + sreclaimable;
+	unsigned long int slab = std::stoul(mi_data[64]);
+	mi.bc = buffer + cache + slab;
 
 	mi.mem_free = std::stoul(mi_data[4]);
 	mi.swap_total = std::stoul(mi_data[43]);
