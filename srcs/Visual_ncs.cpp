@@ -53,7 +53,7 @@ int		Visual_ncs::read_ch()
 
 void	Visual_ncs::display_top_info(std::string const &cur_time, long int uptime, int nou, IVisual::Load_avg const &avg) const
 {
-	mvprintw(0, 0, "the_top - %s up %2ld:%ld, %2d users,  load average: %.2f, %.2f, %.2f\n",
+	mvprintw(0, 0, "the_top - %s up %2ld:%.2ld, %2d users,  load average: %.2f, %.2f, %.2f\n",
 			cur_time.c_str(),
 			uptime / 3600, // hours
 			(uptime % 3600) / 60, // minutes

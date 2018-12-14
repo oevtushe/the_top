@@ -158,7 +158,10 @@ int										SysInfo::_read_num_of_users() const
 	if (!(f = fopen("/run/utmp", "r")))
 		throw(std::logic_error("/run/utmp unavailable"));
 	while (fread(&tmp, sizeof(tmp), 1, f))
-		++cnt;
+	{
+		if (tmp.ut_type == USER_PROCESS)
+			++cnt;
+	}
 	fclose(f);
 	return (cnt);
 }
