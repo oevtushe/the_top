@@ -23,53 +23,13 @@ SysInfo::SysInfo()
 	update();
 }
 
-std::vector<ISys::Procinfo_raw> const	&SysInfo::get_procs_data() const
-{
-	return (_proc);
-}
-
-ISys::Cpuinfo const						&SysInfo::get_cpu_data() const
-{
-	return (_cpu);
-}
-
-ISys::Meminfo const						&SysInfo::get_mem_data() const
-{
-	return (_mem);
-}
-
-ISys::Load_avg const					&SysInfo::get_loadavg() const
-{
-	return (_load_avg);
-}
-
-std::string const						&SysInfo::get_curtime() const
-{
-	return (_cur_time);
-}
-
-long int								SysInfo::get_uptime() const
-{
-	return (_uptime);
-}
-
-int										SysInfo::get_num_of_users() const
-{
-	return (_num_of_users);
-}
-
-ISys::Tasks_count const					&SysInfo::get_tasks_count() const
-{
-	return (_tasks_count);
-}
-
 std::vector<ISys::Procinfo_raw>			SysInfo::_read_proc_data() const
 {
 	DIR								*dir;
 	struct dirent					*runner;
 	std::vector<ISys::Procinfo_raw>	db;
-	std::string						proc{"/proc/"};
 	std::string						wrap;
+	std::string						proc{"/proc/"};
 
 	if (!(dir = opendir(proc.c_str())))
 		throw std::logic_error("Can't open proc");
@@ -77,15 +37,20 @@ std::vector<ISys::Procinfo_raw>			SysInfo::_read_proc_data() const
 	{
 		wrap = runner->d_name;
 		if (std::all_of(wrap.begin(), wrap.end(), [](char c){ return std::isdigit(c); }))
-			db.push_back(_read_proc_data_hlp(proc + runner->d_name));
+		{
+			std::string		path{proc + runner->d_name};
+			std::ifstream	fs{path + "/stat"};
+			std::ifstream	fsm{path + "/statm"};
+			if (fs.good() && fsm.good())
+				db.push_back(_read_proc_data_hlp(fs, fsm, path));
+		}
 	}
 	closedir(dir);
 	return (db);
 }
 
-ISys::Procinfo_raw						SysInfo::_read_proc_data_hlp(std::string const path) const
+ISys::Procinfo_raw						SysInfo::_read_proc_data_hlp(std::ifstream &fstat, std::ifstream &fsm, std::string const &path) const
 {
-	std::ifstream				fstat(path + "/stat");
 	std::vector<std::string>	stat_data{std::istream_iterator<std::string>(fstat),
 		std::istream_iterator<std::string>()};
 	ISys::Procinfo_raw			pi{};
@@ -98,14 +63,13 @@ ISys::Procinfo_raw						SysInfo::_read_proc_data_hlp(std::string const path) con
 	pi.vsize = std::stoul(stat_data[22]) / 1024;
 	pi.rss = std::stol(stat_data[23]) * getpagesize() / 1024;
 
-	std::ifstream	fstatus(path + "/statm");
-	std::vector<std::string> statm_data{std::istream_iterator<std::string>(fstatus),
+	std::vector<std::string> statm_data{std::istream_iterator<std::string>(fsm),
 		std::istream_iterator<std::string>()};
 	pi.mem_shared = std::stol(statm_data[2]) * getpagesize() / 1024;
 
 	struct	stat	st;
 	if (lstat(path.c_str(), &st))
-		throw std::logic_error("Can't lstat dir");
+		throw std::logic_error("Can't lstat dir " + path);
 	pi.user = getpwuid(st.st_uid)->pw_name;
 
 	unsigned long int utime = std::stoul(stat_data[13]);
@@ -127,8 +91,11 @@ long int								SysInfo::_read_uptime() const
 	return (up);
 }
 
-ISys::Meminfo							SysInfo::_read_mem_data(std::ifstream &fmemi) const
+ISys::Meminfo							SysInfo::_read_mem_data() const
 {
+	std::ifstream				fmemi("/proc/meminfo");
+	if (fmemi.fail())
+		throw (std::logic_error("/proc/meminfo unavailable"));
 	ISys::Meminfo				mi;
 	std::vector<std::string>	mi_data{std::istream_iterator<std::string>(fmemi),
 		std::istream_iterator<std::string>()};
@@ -149,8 +116,11 @@ ISys::Meminfo							SysInfo::_read_mem_data(std::ifstream &fmemi) const
 	return (mi);
 }
 
-ISys::Load_avg							SysInfo::_read_loadavg_data(std::ifstream &flavg) const
+ISys::Load_avg							SysInfo::_read_loadavg_data() const
 {
+	std::ifstream				flavg("/proc/loadavg");
+	if (flavg.fail())
+		throw (std::logic_error("/proc/loadavg unavailable"));
 	ISys::Load_avg				la;
 	std::vector<std::string>	raw{std::istream_iterator<std::string>(flavg),
 		std::istream_iterator<std::string>()};
@@ -160,8 +130,11 @@ ISys::Load_avg							SysInfo::_read_loadavg_data(std::ifstream &flavg) const
 	return (la);
 }
 
-ISys::Cpuinfo							SysInfo::_read_cpu_data(std::ifstream &fstat) const
+ISys::Cpuinfo							SysInfo::_read_cpu_data() const
 {
+	std::ifstream				fstat("/proc/stat");
+	if (fstat.fail())
+		throw (std::logic_error("/proc/stat unavailable"));
 	std::vector<std::string>	stat{std::istream_iterator<std::string>(fstat),
 										std::istream_iterator<std::string>()};
 	ISys::Cpuinfo				ci{};
@@ -184,7 +157,7 @@ int										SysInfo::_read_num_of_users() const
 	int			cnt{};
 
 	if (!(f = fopen("/run/utmp", "r")))
-		throw(std::logic_error("can't open /run/utmp"));
+		throw(std::logic_error("/run/utmp unavailable"));
 	while (fread(&tmp, sizeof(tmp), 1, f))
 		++cnt;
 	fclose(f);
@@ -206,32 +179,18 @@ std::string								SysInfo::_read_cur_time() const
 	return (buff);
 }
 
-void									SysInfo::_calc_tasks()
+ISys::Tasks_count		SysInfo::_calc_tasks()
 {
-	_tasks_count.total = _proc.size();
-	_tasks_count.running = std::count_if(_proc.begin(), _proc.end(),
+	ISys::Tasks_count	tc{};
+
+	tc.total = _proc.size();
+	tc.running = std::count_if(_proc.begin(), _proc.end(),
 			[](SysInfo::Procinfo_raw const &t){ return (t.state == 'R');});
-	_tasks_count.sleeping = std::count_if(_proc.begin(), _proc.end(),
+	tc.sleeping = std::count_if(_proc.begin(), _proc.end(),
 			[](SysInfo::Procinfo_raw const &t){ return (t.state == 'S');});
-	_tasks_count.stopped = std::count_if(_proc.begin(), _proc.end(),
+	tc.stopped = std::count_if(_proc.begin(), _proc.end(),
 			[](SysInfo::Procinfo_raw const &t){ return (t.state == 'T');});
-	_tasks_count.zombie = std::count_if(_proc.begin(), _proc.end(),
+	tc.zombie = std::count_if(_proc.begin(), _proc.end(),
 			[](SysInfo::Procinfo_raw const &t){ return (t.state == 'Z');});
-}
-
-void									SysInfo::update()
-{
-	std::ifstream	fstat("/proc/stat");
-	std::ifstream	floadavg("/proc/loadavg");
-	std::ifstream	fmemi("/proc/meminfo");
-	std::ifstream	flavg("/proc/loadavg");
-
-	_cpu = _read_cpu_data(fstat);
-	_mem = _read_mem_data(fmemi);
-	_proc = _read_proc_data();
-	_load_avg = _read_loadavg_data(flavg);
-	_uptime = _read_uptime();
-	_num_of_users = _read_num_of_users();
-	_cur_time = _read_cur_time();
-	_calc_tasks();
+	return (tc);
 }
