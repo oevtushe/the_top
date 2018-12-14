@@ -2,7 +2,8 @@
 #include <unistd.h>
 #include "Visual_ncs.hpp"
 
-bool	operator==(IVisual::Procinfo const &a, IVisual::Procinfo const &b)
+bool	operator==(IVisual::Procinfo const &a,
+			IVisual::Procinfo const &b)
 {
 	return (a.pid == b.pid);
 }
@@ -51,9 +52,11 @@ int		Visual_ncs::read_ch()
 	return (c);
 }
 
-void	Visual_ncs::display_top_info(std::string const &cur_time, long int uptime, int nou, IVisual::Load_avg const &avg) const
+void	Visual_ncs::display_top_info(std::string const &cur_time,
+			long int uptime, int nou, IVisual::Load_avg const &avg) const
 {
-	mvprintw(0, 0, "the_top - %s up %2ld:%.2ld, %2d users,  load average: %.2f, %.2f, %.2f\n",
+	mvprintw(0, 0, "the_top - %s up %2ld:%.2ld, %2d users,  "
+						"load average: %.2f, %.2f, %.2f\n",
 			cur_time.c_str(),
 			uptime / 3600, // hours
 			(uptime % 3600) / 60, // minutes
@@ -65,7 +68,8 @@ void	Visual_ncs::display_top_info(std::string const &cur_time, long int uptime, 
 
 void	Visual_ncs::display_tasks_info(IVisual::Tasks_count const &tc) const
 {
-	mvprintw(1, 0, "Tasks: %3d total, %3d running, %3d sleeping, %3d stopped, %3d zombie\n",
+	mvprintw(1, 0, "Tasks: %3d total, %3d running, "
+						"%3d sleeping, %3d stopped, %3d zombie\n",
 			tc.total,
 			tc.running,
 			tc.sleeping,
@@ -75,7 +79,8 @@ void	Visual_ncs::display_tasks_info(IVisual::Tasks_count const &tc) const
 
 void	Visual_ncs::display_cpu_info(IVisual::Cpu_usage const &ci) const
 {
-	mvprintw(2, 0, "%%Cpu(s):%5.1f us,%5.1f sy,%5.1f ni,%5.1f id,%5.1f wa,%5.1f hi,%5.1f si,%5.1f st\n",
+	mvprintw(2, 0, "%%Cpu(s):%5.1f us,%5.1f sy,%5.1f ni,%5.1f id,"
+			"%5.1f wa,%5.1f hi,%5.1f si,%5.1f st\n",
 			ci.us,
 			ci.sy,
 			ci.ni,
@@ -88,7 +93,8 @@ void	Visual_ncs::display_cpu_info(IVisual::Cpu_usage const &ci) const
 
 void	Visual_ncs::display_mem_info(IVisual::Meminfo const &mi) const
 {
-	mvprintw(3, 0, "KiB Mem : %8lu total, %8lu free, %8lu used, %8lu buff/cache\n",
+	mvprintw(3, 0, "KiB Mem : %8lu total, "
+					"%8lu free, %8lu used, %8lu buff/cache\n",
 			mi.mem_total,
 			mi.mem_free,
 			mi.mem_used,
@@ -97,7 +103,8 @@ void	Visual_ncs::display_mem_info(IVisual::Meminfo const &mi) const
 
 void	Visual_ncs::display_swap_info(IVisual::Meminfo const &mi) const
 {
-	mvprintw(4, 0, "KiB Swap: %8lu total, %8lu free, %8lu used. %8lu avail Mem\n",
+	mvprintw(4, 0, "KiB Swap: %8lu total, %8lu free, "
+						"%8lu used. %8lu avail Mem\n",
 			mi.swap_total,
 			mi.swap_free,
 			mi.swap_used,
@@ -106,7 +113,8 @@ void	Visual_ncs::display_swap_info(IVisual::Meminfo const &mi) const
 
 void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
 {
-	mvprintw(6, 0, "%5.5s %-9.9s %2.2s %3.3s %7.7s %6.6s %6.6s %1.1s %4.4s %4.4s %9.9s %.7s\n",
+	mvprintw(6, 0, "%5.5s %-9.9s %2.2s %3.3s %7.7s %6.6s "
+				"%6.6s %1.1s %4.4s %4.4s %9.9s %.7s\n",
 			"PID",
 			"USER",
 			"PR",
@@ -130,10 +138,12 @@ void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
 		sz = max_show + _offset;
 	for (int i = _offset; i < sz; ++i)
 	{
-		printw("%5d %-9.9s %2.3s %3d %7d %6d %6d %c %4.1f %4.1f %3.1lu:%.2lu.%.2lu %-s\n",
+		printw("%5d %-9.9s %2.3s %3d %7d %6d %6d "
+					"%c %4.1f %4.1f %3.1lu:%.2lu.%.2lu %-s\n",
 				pi[i].pid,
 				pi[i].user.c_str(),
-				pi[i].priority < -99 ? "rt" : std::to_string(pi[i].priority).c_str(),
+				pi[i].priority < -99 ? "rt" :
+						std::to_string(pi[i].priority).c_str(),
 				pi[i].nice,
 				pi[i].vsize,
 				pi[i].rss,

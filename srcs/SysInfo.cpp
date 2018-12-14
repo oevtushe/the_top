@@ -35,7 +35,8 @@ std::vector<ISys::Procinfo_raw>			SysInfo::_read_proc_data() const
 	while ((runner = readdir(dir)))
 	{
 		wrap = runner->d_name;
-		if (std::all_of(wrap.begin(), wrap.end(), [](char c){ return std::isdigit(c); }))
+		if (std::all_of(wrap.begin(), wrap.end(),
+					[](char c){ return std::isdigit(c); }))
 		{
 			std::string		path{proc + runner->d_name};
 			std::ifstream	fs{path + "/stat"};
@@ -48,7 +49,8 @@ std::vector<ISys::Procinfo_raw>			SysInfo::_read_proc_data() const
 	return (db);
 }
 
-ISys::Procinfo_raw						SysInfo::_read_proc_data_hlp(std::ifstream &fstat, std::ifstream &fsm, std::string const &path) const
+ISys::Procinfo_raw	SysInfo::_read_proc_data_hlp(std::ifstream &fstat,
+			std::ifstream &fsm, std::string const &path) const
 {
 	std::vector<std::string>	stat_data{std::istream_iterator<std::string>(fstat),
 		std::istream_iterator<std::string>()};

@@ -5,7 +5,8 @@
 #include <algorithm>
 #include <memory>
 
-static IVisual::Cpu_usage				calc_cpu_usage(IVisual::Cpuinfo const &prev, IVisual::Cpuinfo const &cur)
+static IVisual::Cpu_usage	calc_cpu_usage(IVisual::Cpuinfo const &prev,
+		IVisual::Cpuinfo const &cur)
 {
 	IVisual::Cpu_usage	usage{};
 
@@ -30,7 +31,8 @@ static IVisual::Cpu_usage				calc_cpu_usage(IVisual::Cpuinfo const &prev, IVisua
 	return (usage);
 }
 
-static std::vector<IVisual::Procinfo>	get_procinfo(std::vector<SysInfo::Procinfo_raw> const &prev,
+static std::vector<IVisual::Procinfo>
+get_procinfo(std::vector<SysInfo::Procinfo_raw> const &prev,
 		std::vector<SysInfo::Procinfo_raw> const &cur, long int total)
 {
 	std::vector<IVisual::Procinfo>	procinfo;
@@ -64,7 +66,8 @@ static std::vector<IVisual::Procinfo>	get_procinfo(std::vector<SysInfo::Procinfo
 			pi.cpu = (static_cast<double>(proc.cpu) / total) * 100.0;
 		procinfo.push_back(pi);
 	}
-	std::sort(procinfo.begin(), procinfo.end(), [](IVisual::Procinfo const &a, IVisual::Procinfo const &b){
+	std::sort(procinfo.begin(), procinfo.end(),
+			[](IVisual::Procinfo const &a, IVisual::Procinfo const &b){
 			if (a.cpu >= 0.05 || b.cpu >= 0.05)
 				return (a.cpu > b.cpu);
 			else
@@ -73,9 +76,10 @@ static std::vector<IVisual::Procinfo>	get_procinfo(std::vector<SysInfo::Procinfo
 	return (procinfo);
 }
 
-static void								draw_screen(std::unique_ptr<IVisual> const &ncs,
-											IVisual::Cpu_usage const &usage,
-				std::vector<IVisual::Procinfo> const &ccur, std::unique_ptr<ISys> const &si)
+static void	draw_screen(std::unique_ptr<IVisual> const &ncs,
+							IVisual::Cpu_usage const &usage,
+							std::vector<IVisual::Procinfo> const &ccur,
+							std::unique_ptr<ISys> const &si)
 {
 		ncs->display_top_info(si->get_curtime(), si->get_uptime(),
 				si->get_num_of_users(), si->get_loadavg());
