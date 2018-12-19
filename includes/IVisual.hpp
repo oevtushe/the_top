@@ -1,9 +1,9 @@
 #ifndef IVISUAL_HPP
 # define IVISUAL_HPP
 
-# include "IIntermediate.hpp"
 # include <vector>
 # include <string>
+# include "IIntermediate.hpp"
 
 /*
 ** An interface for the_top visualization
@@ -14,14 +14,14 @@ class IVisual : public IIntermediate
 	public:
 		struct	Cpu_usage
 		{
-			double	us;
-			double	sy;
-			double	ni;
-			double	id;
-			double	wa;
-			double	hi;
-			double	si;
-			double	st;
+			double	us; // user
+			double	sy; // system
+			double	ni; // nice
+			double	id; // idle
+			double	wa; // IO-wait
+			double	hi; // hardware interrupts
+			double	si; // software interrupts
+			double	st; // stolen time by hypervisor
 			double	total;
 		};
 
@@ -39,13 +39,13 @@ class IVisual : public IIntermediate
 			char			state;
 			long int		nice;
 			long int		priority;
-			long int		vsize;
-			long int		rss;
+			long int		vsize; // virtual memory size
+			long int		rss; // Resident Set Size
 			long int		mem_shared;
-			std::string		user;
-			unsigned long	timep;
-			double			memp;
-			double			cpu;
+			std::string		user; // Owner
+			unsigned long	timep; // utime + stime
+			double			memp; // rss / Meminfo::mem_total
+			double			cpu; // percentage of cpu usage
 		};
 
 		virtual			~IVisual() {}

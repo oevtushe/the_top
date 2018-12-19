@@ -1,14 +1,17 @@
 #include "SysInfo.hpp"
-#include <dirent.h>
+
+#include <unistd.h>
+
 #include <fstream>
 #include <iostream>
 #include <algorithm>
 #include <iterator>
-#include <pwd.h>
 #include <numeric>
+
+#include <pwd.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <sys/sysinfo.h>
-#include <unistd.h>
 #include <utmp.h>
 
 bool									operator==(ISys::Procinfo_raw const &a,
@@ -61,12 +64,12 @@ ISys::Procinfo_raw	SysInfo::_read_proc_data_hlp(std::ifstream &fstat,
 	pi.state = stat_data[2][0];
 	pi.nice = std::stol(stat_data[18]);
 	pi.priority = std::stol(stat_data[17]);
-	pi.vsize = std::stoul(stat_data[22]) / 1024;
-	pi.rss = std::stol(stat_data[23]) * getpagesize() / 1024;
+	pi.vsize = std::stoul(stat_data[22]) / 1024; // converted from bytes to kb
+	pi.rss = std::stol(stat_data[23]) * getpagesize() / 1024; // converted from num of pages to kb
 
 	std::vector<std::string> statm_data{std::istream_iterator<std::string>(fsm),
 		std::istream_iterator<std::string>()};
-	pi.mem_shared = std::stol(statm_data[2]) * getpagesize() / 1024;
+	pi.mem_shared = std::stol(statm_data[2]) * getpagesize() / 1024; // converted from num of pages to kb
 
 	struct	stat	st;
 	if (lstat(path.c_str(), &st))
@@ -77,7 +80,7 @@ ISys::Procinfo_raw	SysInfo::_read_proc_data_hlp(std::ifstream &fstat,
 	unsigned long int stime = std::stoul(stat_data[14]);
 	pi.timep = (utime + stime);
 
-	pi.memp = (static_cast<double>(pi.rss) / _mem.mem_total) * 100.0;
+	pi.memp = (static_cast<double>(pi.rss) / _mem.mem_total) * 100.0; // converted to percentage
 	pi.cpu = utime + stime;
 	return (pi);
 }
@@ -178,7 +181,7 @@ std::string								SysInfo::_read_cur_time() const
 	time_t		tloc;
 	struct tm	*tmp{};
 
-	tloc = time(NULL);
+	tloc = time(nullptr);
 	tmp = localtime(&tloc);
 	if (!tmp)
 		throw (std::logic_error("Can't get time"));

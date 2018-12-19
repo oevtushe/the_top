@@ -1,6 +1,6 @@
-#include <ncurses.h>
-#include <unistd.h>
 #include "Visual_ncs.hpp"
+#include <unistd.h>
+#include <ncurses.h>
 
 bool	operator==(IVisual::Procinfo const &a,
 			IVisual::Procinfo const &b)
@@ -14,8 +14,8 @@ Visual_ncs::Visual_ncs() : _offset{}
 	::start_color();
 	::keypad(stdscr, TRUE);
 	::curs_set(0);
-	::halfdelay(30);
-	::init_color(33, 600, 600, 600);
+	::halfdelay(30); // tenths of second
+	::init_color(33, 600, 600, 600); // grey color for table header
 	::init_pair(1, COLOR_BLACK, 33);
 }
 

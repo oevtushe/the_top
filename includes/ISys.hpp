@@ -1,9 +1,9 @@
 #ifndef ISYS_HPP
 # define ISYS_HPP
 
-# include "IIntermediate.hpp"
 # include <string>
 # include <vector>
+# include "IIntermediate.hpp"
 
 class	ISys : public IIntermediate
 {

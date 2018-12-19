@@ -1,9 +1,11 @@
-#include "Visual_ncs.hpp"
-#include "SysInfo.hpp"
-#include <iostream>
 #include <unistd.h>
+
+#include <iostream>
 #include <algorithm>
 #include <memory>
+
+#include "Visual_ncs.hpp"
+#include "SysInfo.hpp"
 
 static IVisual::Cpu_usage	calc_cpu_usage(IVisual::Cpuinfo const &prev,
 		IVisual::Cpuinfo const &cur)
