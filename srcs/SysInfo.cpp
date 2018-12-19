@@ -28,7 +28,7 @@ std::vector<ISys::Procinfo_raw>			SysInfo::_read_proc_data() const
 	struct dirent					*runner;
 	std::vector<ISys::Procinfo_raw>	db;
 	std::string						wrap;
-	std::string						proc{"/proc/"};
+	const std::string				proc{"/proc/"};
 
 	if (!(dir = opendir(proc.c_str())))
 		throw std::logic_error("Can't open proc");
@@ -94,18 +94,19 @@ long int								SysInfo::_read_uptime() const
 
 ISys::Meminfo							SysInfo::_read_mem_data() const
 {
-	std::ifstream				fmemi("/proc/meminfo");
+	std::string					meminfo_path{"/proc/meminfo"};
+	std::ifstream				fmemi(meminfo_path);
 	if (fmemi.fail())
-		throw (std::logic_error("/proc/meminfo unavailable"));
+		throw (std::logic_error(meminfo_path + " unavailable"));
 	ISys::Meminfo				mi;
 	std::vector<std::string>	mi_data{std::istream_iterator<std::string>(fmemi),
 		std::istream_iterator<std::string>()};
 
 	mi.mem_total = std::stoul(mi_data[1]);
 
-	unsigned long int buffer = std::stoul(mi_data[10]);
-	unsigned long int cache = std::stoul(mi_data[13]);
-	unsigned long int slab = std::stoul(mi_data[64]);
+	const unsigned long int buffer{std::stoul(mi_data[10])};
+	const unsigned long int cache{std::stoul(mi_data[13])};
+	const unsigned long int slab{std::stoul(mi_data[64])};
 	mi.bc = buffer + cache + slab;
 
 	mi.mem_free = std::stoul(mi_data[4]);
@@ -119,9 +120,10 @@ ISys::Meminfo							SysInfo::_read_mem_data() const
 
 ISys::Load_avg							SysInfo::_read_loadavg_data() const
 {
-	std::ifstream				flavg("/proc/loadavg");
+	const std::string			loadavg_path{"/proc/loadavg"};
+	std::ifstream				flavg(loadavg_path);
 	if (flavg.fail())
-		throw (std::logic_error("/proc/loadavg unavailable"));
+		throw (std::logic_error(loadavg_path + " unavailable"));
 	ISys::Load_avg				la;
 	std::vector<std::string>	raw{std::istream_iterator<std::string>(flavg),
 		std::istream_iterator<std::string>()};
@@ -133,9 +135,10 @@ ISys::Load_avg							SysInfo::_read_loadavg_data() const
 
 ISys::Cpuinfo							SysInfo::_read_cpu_data() const
 {
-	std::ifstream				fstat("/proc/stat");
+	const std::string			stat_path{"/proc/stat"};
+	std::ifstream				fstat(stat_path);
 	if (fstat.fail())
-		throw (std::logic_error("/proc/stat unavailable"));
+		throw (std::logic_error(stat_path + " unavailable"));
 	std::vector<std::string>	stat{std::istream_iterator<std::string>(fstat),
 										std::istream_iterator<std::string>()};
 	ISys::Cpuinfo				ci{};
@@ -153,12 +156,13 @@ ISys::Cpuinfo							SysInfo::_read_cpu_data() const
 
 int										SysInfo::_read_num_of_users() const
 {
-	FILE		*f{};
-	struct utmp tmp;
-	int			cnt{};
+	const std::string		utmp_path{"/run/utmp"};
+	FILE					*f{};
+	struct utmp 			tmp;
+	int						cnt{};
 
-	if (!(f = fopen("/run/utmp", "r")))
-		throw(std::logic_error("/run/utmp unavailable"));
+	if (!(f = fopen(utmp_path.c_str(), "r")))
+		throw(std::logic_error(utmp_path + " unavailable"));
 	while (fread(&tmp, sizeof(tmp), 1, f))
 	{
 		if (tmp.ut_type == USER_PROCESS)
