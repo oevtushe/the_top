@@ -8,7 +8,7 @@ bool	operator==(IVisual::Procinfo const &a,
 	return (a.pid == b.pid);
 }
 
-Visual_ncs::Visual_ncs() : _offset{}
+Visual_ncs::Visual_ncs() : _selected{}
 {
 	::initscr();
 	::start_color();
@@ -41,11 +41,11 @@ int		Visual_ncs::read_ch()
 	switch((c = ::getch()))
 	{
 		case KEY_DOWN:
-			++_offset;
+			++_selected;
 			break ;
 		case KEY_UP:
-			if (_offset)
-				--_offset;
+			if (_selected)
+				--_selected;
 			break ;
 	}
 	::flushinp();
@@ -131,29 +131,29 @@ void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
 	move(7, 0);
 	int		tck_sc = sysconf(_SC_CLK_TCK);
 	int		sz = pi.size();
-	int		max_show = LINES - 7;
-	if (_offset > sz)
-		_offset = sz;
-	if (sz - _offset > max_show)
-		sz = max_show + _offset;
-	for (int i = _offset; i < sz; ++i)
+	int		max_show = LINES - 7; // to check
+	if (_selected >= sz)
+		_selected = sz - 1;
+	for (auto const &proc : pi)
 	{
 		printw("%5d %-9.9s %2.3s %3d %7d %6d %6d "
 					"%c %4.1f %4.1f %3.1lu:%.2lu.%.2lu %-s\n",
-				pi[i].pid,
-				pi[i].user.c_str(),
-				pi[i].priority < -99 ? "rt" :
-						std::to_string(pi[i].priority).c_str(),
-				pi[i].nice,
-				pi[i].vsize,
-				pi[i].rss,
-				pi[i].mem_shared,
-				pi[i].state,
-				pi[i].cpu,
-				pi[i].memp,
-				pi[i].timep / (60 * tck_sc), // minutes
-				(pi[i].timep % 6000) / tck_sc, // seconds
-				(pi[i].timep % 6000) % 100, // 1/100 second
-				pi[i].command.c_str());
+				proc.pid,
+				proc.user.c_str(),
+				proc.priority < -99 ? "rt" :
+					std::to_string(proc.priority).c_str(),
+				proc.nice,
+				proc.vsize,
+				proc.rss,
+				proc.mem_shared,
+				proc.state,
+				proc.cpu,
+				proc.memp,
+				proc.timep / (60 * tck_sc), // minutes
+				(proc.timep % 6000) / tck_sc, // seconds
+				(proc.timep % 6000) % 100, // 1/100 second
+				proc.command.c_str());
 	}
+	mvchgat(_selected + 7, 0, -1, A_NORMAL, 1, NULL);
+	// if selected goes out of the screen , scroll processes
 }

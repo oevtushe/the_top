@@ -20,7 +20,7 @@ class Visual_ncs : public IVisual
 		void	display_swap_info(IVisual::Meminfo const &) const;
 		void	display_procs_info(std::vector<IVisual::Procinfo> const &);
 	private:
-		int		_offset;
+		int		_selected;
 };
 
 #endif
