@@ -83,12 +83,12 @@ static void	draw_screen(std::unique_ptr<IVisual> const &ncs,
 							std::vector<IVisual::Procinfo> const &ccur,
 							std::unique_ptr<ISys> const &si)
 {
-		ncs->display_top_info(si->get_curtime(), si->get_uptime(),
-				si->get_num_of_users(), si->get_loadavg());
-		ncs->display_tasks_info(si->get_tasks_count());
-		ncs->display_cpu_info(usage);
-		ncs->display_mem_info(si->get_mem_data());
-		ncs->display_swap_info(si->get_mem_data());
+		ncs->display_cpu_bar(usage);
+		ncs->display_mem_bar(si->get_mem_data());
+		ncs->display_swap_bar(si->get_mem_data());
+		int	running = std::count_if(ccur.begin(), ccur.end(), [](IVisual::Procinfo const &p) { return (p.state == 'R'); });
+		ncs->display_right_window(si->get_thread_num(), ccur.size(),
+				running, si->get_loadavg(), si->get_uptime());
 		ncs->display_procs_info(ccur);
 }
 

@@ -25,7 +25,7 @@ SysInfo::SysInfo()
 	update();
 }
 
-std::vector<ISys::Procinfo_raw>			SysInfo::_read_proc_data() const
+std::vector<ISys::Procinfo_raw>			SysInfo::_read_proc_data()
 {
 	DIR								*dir;
 	struct dirent					*runner;
@@ -53,7 +53,7 @@ std::vector<ISys::Procinfo_raw>			SysInfo::_read_proc_data() const
 }
 
 ISys::Procinfo_raw	SysInfo::_read_proc_data_hlp(std::ifstream &fstat,
-			std::ifstream &fsm, std::string const &path) const
+			std::ifstream &fsm, std::string const &path)
 {
 	std::vector<std::string>	stat_data{std::istream_iterator<std::string>(fstat),
 		std::istream_iterator<std::string>()};
@@ -82,7 +82,8 @@ ISys::Procinfo_raw	SysInfo::_read_proc_data_hlp(std::ifstream &fstat,
 
 	pi.memp = (static_cast<double>(pi.rss) / _mem.mem_total) * 100.0; // converted to percentage
 	pi.cpu = utime + stime;
-	return (pi);
+	_threads += (std::stoi(stat_data[19]) - 1); // very smart !
+ 	return (pi);
 }
 
 long int								SysInfo::_read_uptime() const
@@ -110,13 +111,16 @@ ISys::Meminfo							SysInfo::_read_mem_data() const
 	const unsigned long int buffer{std::stoul(mi_data[10])};
 	const unsigned long int cache{std::stoul(mi_data[13])};
 	const unsigned long int slab{std::stoul(mi_data[64])};
-	mi.bc = buffer + cache + slab;
+
+	mi.mem_buf = buffer;
+	mi.mem_cache = cache;
+	mi.mem_slab = slab;
 
 	mi.mem_free = std::stoul(mi_data[4]);
 	mi.swap_total = std::stoul(mi_data[43]);
 	mi.swap_free = std::stoul(mi_data[46]);
 	mi.available = std::stoul(mi_data[7]);
-	mi.mem_used = mi.mem_total - mi.mem_free - mi.bc;
+	mi.mem_used = mi.mem_total - mi.mem_free - mi.mem_buf - mi.mem_cache - mi.mem_slab;
 	mi.swap_used = mi.swap_total - mi.swap_free;
 	return (mi);
 }

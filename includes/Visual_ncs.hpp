@@ -2,6 +2,7 @@
 # define VISUAL_NCS_HPP
 
 # include "IVisual.hpp"
+# include <ncurses.h>
 
 class Visual_ncs : public IVisual
 {
@@ -13,14 +14,17 @@ class Visual_ncs : public IVisual
 		void	refresh() const;
 		void	clean_screen() const;
 		int		read_ch();
-		void	display_top_info(std::string const &, long int, int, IVisual::Load_avg const &) const;
-		void	display_tasks_info(IVisual::Tasks_count const &) const;
-		void	display_cpu_info(IVisual::Cpu_usage const &) const;
-		void	display_mem_info(IVisual::Meminfo const &) const;
-		void	display_swap_info(IVisual::Meminfo const &) const;
+		void	display_cpu_bar(IVisual::Cpu_usage const &usage) const;
+		void	display_mem_bar(IVisual::Meminfo const &memi) const;
 		void	display_procs_info(std::vector<IVisual::Procinfo> const &);
+		void	display_right_window(int threads, int tasks, int r,
+			IVisual::Load_avg const &load_avg, long int uptime);
+		void	display_swap_bar(IVisual::Meminfo const &memi) const;
 	private:
 		int		_selected;
+		WINDOW	*_meters;
+		WINDOW	*_text_info;
+		WINDOW	*_processes;
 };
 
 #endif

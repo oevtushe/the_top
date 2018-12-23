@@ -34,6 +34,7 @@ class	ISys : public IIntermediate
 		std::string const						&get_curtime() const { return (_cur_time); }
 		long int								get_uptime() const { return (_uptime); }
 		int										get_num_of_users() const { return (_num_of_users); }
+		int										get_thread_num() const { return (_threads); };
 		void									update();
 	protected:
 		std::vector<Procinfo_raw>				_proc;
@@ -44,8 +45,9 @@ class	ISys : public IIntermediate
 		int										_num_of_users;
 		std::string								_cur_time;
 		Tasks_count								_tasks_count;
+		int										_threads{};
 	private:
-		virtual std::vector<Procinfo_raw>		_read_proc_data() const = 0;
+		virtual std::vector<Procinfo_raw>		_read_proc_data() = 0;
 		virtual Cpuinfo							_read_cpu_data() const = 0;
 		virtual Meminfo							_read_mem_data() const = 0;
 		virtual Load_avg						_read_loadavg_data() const = 0;
