@@ -110,17 +110,18 @@ ISys::Meminfo							SysInfo::_read_mem_data() const
 
 	const unsigned long int buffer{std::stoul(mi_data[10])};
 	const unsigned long int cache{std::stoul(mi_data[13])};
-	const unsigned long int slab{std::stoul(mi_data[64])};
+	const unsigned long int sreclaimable{std::stoul(mi_data[67])};
+	//const unsigned long int nfs_unstable{std::stoul(mi_data[64])};
 
 	mi.mem_buf = buffer;
 	mi.mem_cache = cache;
-	mi.mem_slab = slab;
+	mi.mem_sreclaimable = sreclaimable;
 
 	mi.mem_free = std::stoul(mi_data[4]);
 	mi.swap_total = std::stoul(mi_data[43]);
 	mi.swap_free = std::stoul(mi_data[46]);
 	mi.available = std::stoul(mi_data[7]);
-	mi.mem_used = mi.mem_total - mi.mem_free - mi.mem_buf - mi.mem_cache - mi.mem_slab;
+	mi.mem_used = mi.mem_total - mi.mem_free - mi.mem_buf - mi.mem_cache - mi.mem_sreclaimable;
 	mi.swap_used = mi.swap_total - mi.swap_free;
 	return (mi);
 }

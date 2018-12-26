@@ -14,7 +14,7 @@ class IIntermediate
 			unsigned long int available;
 			unsigned long int mem_cache;
 			unsigned long int mem_buf;
-			unsigned long int mem_slab;
+			unsigned long int mem_sreclaimable;
 			unsigned long int mem_total;
 			unsigned long int mem_free;
 			unsigned long int mem_used;
