@@ -1,5 +1,6 @@
 #include "Visual_ncs.hpp"
 #include <sstream>
+#include <iomanip>
 #include <unistd.h>
 #include <string.h>
 
@@ -216,7 +217,6 @@ void	Visual_ncs::display_cpu_bar(IVisual::Cpu_usage const &usage)
 	os << mytot << "%" << bar_rb;
 	mvwprintw(_meters, y, x - os.str().length() - 1,
 					"%s", os.str().c_str()); // -1 excludes borders
-
 	wmove(_meters, y, strlen(bar_lb) + 1);
 
 	const int times_ni = bar_size * usage.ni + 0.5;
@@ -248,11 +248,12 @@ void	Visual_ncs::display_mem_bar(IVisual::Meminfo const &memi)
 	std::pair<double, char> user{config_units(mem_user)};
 	std::pair<double, char> total{config_units(memi.mem_total)};
 
+	const int user_prec = user.second == 'G' ? 2 : 0;
+	const int total_prec = total.second == 'G' ? 2 : 0;
 	std::ostringstream	os;
-	os.precision(2);
 	os << std::fixed;
-	os << user.first << user.second << "/";
-	os << total.first << total.second << bar_rb;
+	os << std::setprecision(user_prec) << user.first << user.second << "/";
+	os << std::setprecision(total_prec) << total.first << total.second << bar_rb;
 
 	// display borders for bar
 	mvwprintw(_meters, y, 1, bar_lb);
@@ -287,10 +288,11 @@ void	Visual_ncs::display_swap_bar(IVisual::Meminfo const &memi)
 	std::pair<double, char>	swap_used{config_units(memi.swap_used)};
 
 	std::ostringstream	os;
-	os.precision(2);
+	const int total_prec = swap_total.second == 'G' ? 2 : 0;
+	const int used_prec = swap_used.second == 'G' ? 2 : 0;
 	os << std::fixed;
-	os << swap_used.first << swap_used.second << "/";
-	os << swap_total.first << swap_total.second << bar_rb;
+	os << std::setprecision(used_prec) << swap_used.first << swap_used.second << "/";
+	os << std::setprecision(total_prec) << swap_total.first << swap_total.second << bar_rb;
 	mvwprintw(_meters, y, x - os.str().length() - 1, "%s", os.str().c_str());
 
 	wmove(_meters, y, strlen(bar_lb) + 1);
