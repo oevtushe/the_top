@@ -8,6 +8,7 @@
 class Visual_ncs : public IVisual
 {
 	public:
+		enum Colors {MY_RED = 1, MY_BLUE, MY_GREEN, MY_YELLOW, MY_CYAN, MY_LINE, MY_HEADER};
 		Visual_ncs();
 		~Visual_ncs();
 		Visual_ncs(Visual_ncs const &) = delete;
@@ -26,13 +27,14 @@ class Visual_ncs : public IVisual
 		unsigned int					_selected;
 		unsigned int					_vp_start; // vp -> view point
 		unsigned int					_vp_end;
-		unsigned int					_vp_lines;
 		WINDOW							*_meters;
 		WINDOW							*_text_info;
 		WINDOW							*_processes;
 		std::vector<IVisual::Procinfo>	_procinfo;
 		void							_keyhooker();
 		void							_display_cursor();
+		void							_init_windows();
+		void							_del_wins();
 };
 
 #endif

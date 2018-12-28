@@ -94,25 +94,6 @@ static void	draw_screen(std::shared_ptr<IVisual> const &ncs,
 }
 
 /*
-int		key_handler(std::shared_ptr<IVisual> &visual, std::shared_ptr<ISys> &si)
-{
-	int	c{};
-
-	while (c = getch())
-	{
-		switch (c)
-		{
-			case 'q': return (1);
-			case KEY_UP: visual->move_up();
-			case KEY_DOWN: visual->move_down();
-		}
-		visual->display_procs_info(si->get_procs_data());
-	}
-	return (0);
-}
-*/
-
-/*
 ** There are two fundamental interfaces 'IVisual' for data
 ** displayers, 'ISys' for data loaders.
 ** Top works with this interfaces.
@@ -120,6 +101,7 @@ int		key_handler(std::shared_ptr<IVisual> &visual, std::shared_ptr<ISys> &si)
 
 int										main(void)
 {
+	int									wait_sec{3};
 	std::shared_ptr<ISys>				si{new SysInfo{}};
 	std::shared_ptr<IVisual>			ncs{new Visual_ncs{}};
 	IVisual::Cpuinfo					prev{}; // for %Cpu(s) general
@@ -142,7 +124,6 @@ int										main(void)
 		ncs->refresh();
 		prev = cur;
 		pprev = ccur;
-	//} while ((ncs->read_ch() != 'q')); // wait for result from future obj. N seconds (result will be sent if 'q' pressed)
-	} while (fut.wait_for(std::chrono::seconds(3)) == std::future_status::timeout);
+	} while (fut.wait_for(std::chrono::seconds(wait_sec)) == std::future_status::timeout);
 	return (0);
 }

@@ -3,16 +3,6 @@
 #include <unistd.h>
 #include <string.h>
 
-// get rid of it !
-# define MY_RED 2
-# define MY_BLUE 3
-# define MY_GREEN 4
-# define MY_YELLOW 5
-# define MY_CYAN 6
-# define MY_LINE 7
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
 bool	operator==(IVisual::Procinfo const &a,
 			IVisual::Procinfo const &b)
 {
@@ -23,37 +13,45 @@ Visual_ncs::Visual_ncs() : _selected{}
 {
 	::initscr();
 	::start_color();
-	::keypad(stdscr, TRUE);
 	::curs_set(0);
-	//::halfdelay(10); // tenths of second
-	//::init_color(33, 600, 600, 600); // grey color for table header
-	::init_pair(1, COLOR_BLACK, COLOR_GREEN);
-	::init_pair(2, COLOR_RED, COLOR_BLACK);
-	::init_pair(3, COLOR_BLUE, COLOR_BLACK);
-	::init_pair(4, COLOR_GREEN, COLOR_BLACK);
-	::init_pair(5, COLOR_YELLOW, COLOR_BLACK);
-	::init_pair(6, COLOR_CYAN, COLOR_BLACK);
-	::init_pair(7, COLOR_BLACK, COLOR_CYAN);
+	::init_pair(MY_HEADER, COLOR_BLACK, COLOR_GREEN);
+	::init_pair(MY_RED, COLOR_RED, COLOR_BLACK);
+	::init_pair(MY_BLUE, COLOR_BLUE, COLOR_BLACK);
+	::init_pair(MY_GREEN, COLOR_GREEN, COLOR_BLACK);
+	::init_pair(MY_YELLOW, COLOR_YELLOW, COLOR_BLACK);
+	::init_pair(MY_CYAN, COLOR_CYAN, COLOR_BLACK);
+	::init_pair(MY_LINE, COLOR_BLACK, COLOR_CYAN);
+	_init_windows();
+}
+
+void	Visual_ncs::_init_windows()
+{
 	int	w = (COLS - 5) / 2;
 	_meters = newwin(5, w, 1, 2);
 	_text_info = newwin(5, w, 1, w + 3);
 	_processes = newwin(LINES - 6, COLS, 6, 0);
-	wborder(_meters, '|', '|', '-', '-', '+', '+', '+', '+');
-	wborder(_text_info, '|', '|', '-', '-', '+', '+', '+', '+');
-	wborder(_processes, '|', '|', '-', '-', '+', '+', '+', '+');
 
 	_vp_start = 0;
 	int x,y;
 	getmaxyx(_processes, y, x);
-	_vp_lines = y - 3;
-	_vp_end = _vp_lines;
+	_vp_end = y - 3;
+	_selected = 0;
+	::keypad(_processes, TRUE);
+}
+
+void	Visual_ncs::_del_wins()
+{
+	// clean buffers and screen before
+	clean_screen();
+	refresh();
+	delwin(_meters);
+	delwin(_text_info);
+	delwin(_processes);
 }
 
 Visual_ncs::~Visual_ncs()
 {
-	delwin(_meters);
-	delwin(_text_info);
-	delwin(_processes);
+	_del_wins();
 	::endwin();
 }
 
@@ -66,14 +64,9 @@ void	Visual_ncs::clean_screen() const
 
 void	Visual_ncs::refresh() const
 {
-	::refresh();
-	wborder(_meters, '|', '|', '-', '-', '+', '+', '+', '+');
-	wborder(_text_info, '|', '|', '-', '-', '+', '+', '+', '+');
-	wborder(_processes, '|', '|', '-', '-', '+', '+', '+', '+');
 	::wrefresh(_meters);
 	::wrefresh(_text_info);
 	::wrefresh(_processes);
-
 }
 
 std::future<void>	Visual_ncs::run_keyhooker()
@@ -85,12 +78,13 @@ void	Visual_ncs::_keyhooker()
 {
 	int	c{};
 
-	while (c = getch())
+	while ((c = wgetch(_processes)))
 	{
 		switch (c)
 		{
 			case 'q': return ;
 			case KEY_UP:
+			{
 					if (_selected)
 						--_selected;
 					else
@@ -102,7 +96,9 @@ void	Visual_ncs::_keyhooker()
 						}
 					}
 				  break ;
+			}
 			case KEY_DOWN:
+			{
 				  if (_selected + _vp_start + 1 >= _vp_end)
 				  {
 					  if (_vp_end < _procinfo.size())
@@ -114,13 +110,19 @@ void	Visual_ncs::_keyhooker()
 				  else if (_selected  + 1 < _procinfo.size())
 					  ++_selected;
 				  break ;
+			}
+			case KEY_RESIZE:
+			{
+				_del_wins();
+				::refresh();
+				_init_windows();
+				break ;
+			}
 		}
 		werase(_processes);
-		wborder(_processes, '|', '|', '-', '-', '+', '+', '+', '+');
 		display_procs_info(_procinfo);
 		wrefresh(_processes);
 	}
-	return ;
 }
 
 void	Visual_ncs::display_meter(int cp, int times)
@@ -132,7 +134,7 @@ void	Visual_ncs::display_meter(int cp, int times)
 	{
 		if (winch(_meters) == ' ')
 			wprintw(_meters, "%c", fill);
-		else // paint digits in corresponding color
+		else // paint text in corresponding color
 		{
 			int	x, y;
 			getyx(_meters, y, x);
@@ -294,7 +296,7 @@ void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
 			"%MEM",
 			"TIME+",
 			"COMMAND");
-	mvwchgat(_processes, 1, 1, COLS - 2, A_NORMAL, 1, NULL);
+	mvwchgat(_processes, 1, 1, COLS - 2, A_NORMAL, MY_HEADER, NULL);
 	wmove(_processes, 1, 1);
 	int		tck_sc = sysconf(_SC_CLK_TCK);
 	int		times = _vp_end > pi.size() ? pi.size() : _vp_end;
@@ -318,13 +320,15 @@ void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
 				(pi[i].timep % 6000) % 100, // 1/100 second
 				pi[i].command.c_str());
 	}
-	// if selected goes out of the screen , scroll processes
-	// test on your laptop
 	_procinfo = pi;
 	_display_cursor();
 }
 
 void	Visual_ncs::_display_cursor()
 {
+	// move 'selected' back if prev
+	// position is too low
+	if (_selected >= _procinfo.size())
+		_selected = _procinfo.size() - 1;
 	mvwchgat(_processes, _selected + 2, 1, COLS - 2, A_NORMAL, MY_LINE, NULL);
 }
