@@ -26,16 +26,32 @@ Visual_ncs::Visual_ncs() : _selected{}
 
 void	Visual_ncs::_init_windows()
 {
-	int	w = (COLS - 5) / 2;
-	_meters = newwin(5, w, 1, 2);
-	_text_info = newwin(5, w, 1, w + 3);
-	_processes = newwin(LINES - 6, COLS, 6, 0);
+	const int space_between = 1;
+	const int align_left_right = 2;
+
+	const int meters_height = 5; // additional 2 is borders
+	const int meters_width = (COLS - align_left_right * 2 - space_between) / 2;
+	const int meters_start_x = 2;
+	const int meters_start_y = 1;
+	_meters = newwin(meters_height, meters_width, meters_start_y, meters_start_x);
+
+	const int text_info_height = meters_height;
+	const int text_info_width = meters_width;
+	const int text_info_start_x = meters_width + meters_start_x + space_between;
+	const int text_info_start_y = meters_start_y;
+	_text_info = newwin(text_info_height, text_info_width, text_info_start_y, text_info_start_x);
+
+	const int processes_height = LINES - meters_height - meters_start_y;
+	const int processes_width = COLS;
+	const int proc_start_y = meters_height + meters_start_y;
+	const int proc_start_x = 0;
+	_processes = newwin(processes_height, processes_width, proc_start_y, proc_start_x);
 
 	_vp_start = 0;
 	int x,y;
 	getmaxyx(_processes, y, x);
-	_vp_end = y - 3;
-	_selected = 0;
+	_vp_end = y - 3; // -3 is 2 borders, 1 header line
+	_selected = _vp_start;
 	::keypad(_processes, TRUE);
 }
 
@@ -95,7 +111,7 @@ void	Visual_ncs::_keyhooker()
 							--_vp_end;
 						}
 					}
-				  break ;
+				  	break ;
 			}
 			case KEY_DOWN:
 			{
@@ -147,17 +163,19 @@ void	Visual_ncs::display_meter(int cp, int times)
 
 static std::pair<double, char>	config_units(unsigned long int val)
 {
+	constexpr int			kib_in_gib{1048576};
+	constexpr int 			kib_in_mib{1024};
 	std::pair<double, char>	res{};
 
-	if (val > 976563)
+	if (val > kib_in_gib)
 	{
 		res.second = 'G';
-		res.first = val / 976563.0;
+		res.first = static_cast<double>(val) / kib_in_gib;
 	}
-	else if (val > 1024)
+	else if (val > kib_in_mib)
 	{
 		res.second = 'M';
-		res.first = val / 1024.0;
+		res.first = static_cast<double>(val) / kib_in_mib;
 	}
 	else
 	{
@@ -169,18 +187,17 @@ static std::pair<double, char>	config_units(unsigned long int val)
 
 void	Visual_ncs::display_cpu_bar(IVisual::Cpu_usage const &usage)
 {
-	int		x;
-	int		y;
-	double	bar{};
-	auto	bar_lb{"CPU["};
-	auto	bar_rb{"]"};
+	int					x{};
+	int					y{};
+	auto				bar_lb{"CPU["}; // lb -> left border
+	auto				bar_rb{"]"};
 
 	getmaxyx(_meters, y, x);
 	y = 1; // line pos in cur _meters window
 	mvwprintw(_meters, y, 1, bar_lb);
-	bar = (x - strlen(bar_lb) - strlen(bar_rb) - 2) / 100.0; // -2 excludes borders
+	const int bar_size = (x - strlen(bar_lb) - strlen(bar_rb) - 2) / 100.0; // -2 excludes borders
 
-	double mytot = usage.ni + usage.us + usage.sy +
+	const double mytot = usage.ni + usage.us + usage.sy +
 					usage.wa + usage.hi + usage.si + usage.st;
 
 	std::ostringstream	os;
@@ -191,10 +208,11 @@ void	Visual_ncs::display_cpu_bar(IVisual::Cpu_usage const &usage)
 					"%s", os.str().c_str()); // -1 excludes borders
 
 	wmove(_meters, y, strlen(bar_lb) + 1);
-	int		times_ni = bar * usage.ni + 0.5;
-	int		times_us = bar * usage.us + 0.5;
-	int		times_kernel = bar * (usage.sy + usage.wa + usage.hi) + 0.5;
-	int		times_virt = bar * (usage.si + usage.st) + 0.5;
+
+	const int times_ni = bar_size * usage.ni + 0.5;
+	const int times_us = bar_size * usage.us + 0.5;
+	const int times_kernel = bar_size * (usage.sy + usage.wa + usage.hi) + 0.5;
+	const int times_virt = bar_size * (usage.si + usage.st) + 0.5;
 	display_meter(MY_BLUE, times_ni);
 	display_meter(MY_GREEN, times_us);
 	display_meter(MY_RED, times_kernel);
@@ -205,17 +223,16 @@ void	Visual_ncs::display_mem_bar(IVisual::Meminfo const &memi)
 {
 	int		x;
 	int		y;
-	int		bar_size{};
 	auto	bar_lb{"Mem["};
 	auto	bar_rb{"]"};
 
 	getmaxyx(_meters, y, x);
 	y = 2; // line pos in cur _meters window
-	bar_size = x - strlen(bar_lb) - strlen(bar_rb) - 2; // -2 exludes borders
+	const int bar_size = x - strlen(bar_lb) - strlen(bar_rb) - 2; // -2 exludes borders
 
 	// count buffers and cache as used memory also
 	// for text output
-	unsigned long int mem_user = memi.mem_used +
+	const unsigned long int mem_user = memi.mem_used +
 		memi.mem_buf + memi.mem_cache + memi.mem_sreclaimable;
 
 	std::pair<double, char> user{config_units(mem_user)};
@@ -232,12 +249,12 @@ void	Visual_ncs::display_mem_bar(IVisual::Meminfo const &memi)
 	mvwprintw(_meters, y, x - os.str().length() - 1,
 				"%s", os.str().c_str()); // -1 excludes right border
 
-	double used_ratio = static_cast<double>(memi.mem_used) / memi.mem_total;
-	double buf_ratio = static_cast<double>(memi.mem_buf) / memi.mem_total;
-	double cache_ratio = static_cast<double>(memi.mem_cache + memi.mem_sreclaimable) / (memi.mem_total);
-	int	times_used = bar_size * used_ratio + 0.5;
-	int	times_buf = bar_size * buf_ratio + 0.5;
-	int	times_cache = bar_size * cache_ratio + 0.5;
+	const double used_ratio = static_cast<double>(memi.mem_used) / memi.mem_total;
+	const double buf_ratio = static_cast<double>(memi.mem_buf) / memi.mem_total;
+	const double cache_ratio = static_cast<double>(memi.mem_cache + memi.mem_sreclaimable) / (memi.mem_total);
+	const int	 times_used = bar_size * used_ratio + 0.5;
+	const int	 times_buf = bar_size * buf_ratio + 0.5;
+	const int	 times_cache = bar_size * cache_ratio + 0.5;
 
 	wmove(_meters, y, strlen(bar_lb) + 1);
 	display_meter(MY_GREEN, times_used);
@@ -267,8 +284,8 @@ void	Visual_ncs::display_swap_bar(IVisual::Meminfo const &memi)
 	mvwprintw(_meters, y, x - os.str().length() - 1, "%s", os.str().c_str());
 
 	wmove(_meters, y, strlen(bar_lb) + 1);
-	double	used_ratio = static_cast<double>(memi.swap_used) / memi.swap_total;
-	int		times_used = x * used_ratio + 0.5;
+	const double	used_ratio = static_cast<double>(memi.swap_used) / memi.swap_total;
+	const int		times_used = x * used_ratio + 0.5;
 	display_meter(MY_RED, times_used);
 }
 
@@ -298,8 +315,8 @@ void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
 			"COMMAND");
 	mvwchgat(_processes, 1, 1, COLS - 2, A_NORMAL, MY_HEADER, NULL);
 	wmove(_processes, 1, 1);
-	int		tck_sc = sysconf(_SC_CLK_TCK);
-	int		times = _vp_end > pi.size() ? pi.size() : _vp_end;
+	const int tck_sc = sysconf(_SC_CLK_TCK);
+	const int times = _vp_end > pi.size() ? pi.size() : _vp_end;
 	for (int i = _vp_start, j = 0; i < times; ++i, ++j)
 	{
 		mvwprintw(_processes, j + 2, 1, "%5d %-9.9s %2.3s %3d %7d %6d %6d "
