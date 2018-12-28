@@ -110,7 +110,7 @@ int										main(void)
 	std::vector<SysInfo::Procinfo_raw>	pprev{si->get_procs_data()}; // for %CPU per process
 	std::vector<SysInfo::Procinfo_raw> 	ccur;
 	std::vector<IVisual::Procinfo>		procinfo;
-	std::future<void> fut{ncs->run_keyhooker()};
+	std::future<void> fut{ncs->run_key_handler()};
 
 	do
 	{

@@ -26,11 +26,13 @@ Visual_ncs::Visual_ncs() : _selected{}
 
 void	Visual_ncs::_init_windows()
 {
-	const int space_between = 1;
+	// add space between windows if can't divide evenly
+	const int space_between = COLS % 2 ? 2 : 1;
 	const int align_left_right = 2;
 
 	const int meters_height = 5; // additional 2 is borders
-	const int meters_width = (COLS - align_left_right * 2 - space_between) / 2;
+	const int meters_width = (COLS - align_left_right * 2 - space_between) / 2; // always divides evenly
+																				// thanks to space_between
 	const int meters_start_x = 2;
 	const int meters_start_y = 1;
 	_meters = newwin(meters_height, meters_width, meters_start_y, meters_start_x);
@@ -85,47 +87,27 @@ void	Visual_ncs::refresh() const
 	::wrefresh(_processes);
 }
 
-std::future<void>	Visual_ncs::run_keyhooker()
+std::future<void>	Visual_ncs::run_key_handler()
 {
-	return (std::async(std::launch::async, &Visual_ncs::_keyhooker, this));
+	return (std::async(std::launch::async, &Visual_ncs::_key_handler, this));
 }
 
-void	Visual_ncs::_keyhooker()
+void	Visual_ncs::_key_handler()
 {
-	int	c{};
-
-	while ((c = wgetch(_processes)))
+	while (int c = wgetch(_processes))
 	{
 		switch (c)
 		{
 			case 'q': return ;
 			case KEY_UP:
 			{
-					if (_selected)
-						--_selected;
-					else
-					{
-						if (_vp_start)
-						{
-							--_vp_start;
-							--_vp_end;
-						}
-					}
-				  	break ;
+				_handle_up_vp_border();
+				break ;
 			}
 			case KEY_DOWN:
 			{
-				  if (_selected + _vp_start + 1 >= _vp_end)
-				  {
-					  if (_vp_end < _procinfo.size())
-					  {
-						  ++_vp_end;
-						  ++_vp_start;
-					  }
-				  }
-				  else if (_selected  + 1 < _procinfo.size())
-					  ++_selected;
-				  break ;
+				_handle_down_vp_border();
+			  	break ;
 			}
 			case KEY_RESIZE:
 			{
@@ -139,6 +121,34 @@ void	Visual_ncs::_keyhooker()
 		display_procs_info(_procinfo);
 		wrefresh(_processes);
 	}
+}
+
+void	Visual_ncs::_handle_up_vp_border()
+{
+	if (_selected)
+		--_selected;
+	else
+	{
+		if (_vp_start)
+		{
+			--_vp_start;
+			--_vp_end;
+		}
+	}
+}
+
+void	Visual_ncs::_handle_down_vp_border()
+{
+	if (_selected + _vp_start + 1 >= _vp_end)
+	{
+		if (_vp_end < _procinfo.size())
+		{
+			++_vp_end;
+			++_vp_start;
+		}
+	}
+	else if (_selected  + 1 < _procinfo.size())
+		++_selected;
 }
 
 void	Visual_ncs::display_meter(int cp, int times)
@@ -297,7 +307,7 @@ void	Visual_ncs::display_right_window(int threads, int tasks, int r,
 	mvwprintw(_text_info, 3, 1, "Uptime: %.2d:%.2d:%.2d\n", uptime / 3600, uptime % 3600 / 60, uptime % 60);
 }
 
-void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
+void	Visual_ncs::_display_header()
 {
 	mvwprintw(_processes, 1, 1, "%5.5s %-9.9s %2.2s %3.3s %7.7s %6.6s "
 				"%6.6s %1.1s %4.4s %4.4s %9.9s %s",
@@ -315,8 +325,14 @@ void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
 			"COMMAND");
 	mvwchgat(_processes, 1, 1, COLS - 2, A_NORMAL, MY_HEADER, NULL);
 	wmove(_processes, 1, 1);
+}
+
+void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
+{
 	const int tck_sc = sysconf(_SC_CLK_TCK);
 	const int times = _vp_end > pi.size() ? pi.size() : _vp_end;
+
+	_display_header();
 	for (int i = _vp_start, j = 0; i < times; ++i, ++j)
 	{
 		mvwprintw(_processes, j + 2, 1, "%5d %-9.9s %2.3s %3d %7d %6d %6d "
@@ -337,7 +353,7 @@ void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
 				(pi[i].timep % 6000) % 100, // 1/100 second
 				pi[i].command.c_str());
 	}
-	_procinfo = pi;
+	_procinfo = pi; // steal data for key_handler
 	_display_cursor();
 }
 
