@@ -2,6 +2,7 @@
 
 void	ISys::update()
 {
+	_threads = 0;
 	_cpu = _read_cpu_data();
 	_mem = _read_mem_data();
 	_proc = _read_proc_data();

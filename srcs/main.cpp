@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <memory>
+#include <chrono>
 
 #include "Visual_ncs.hpp"
 #include "SysInfo.hpp"
@@ -78,10 +79,10 @@ get_procinfo(std::vector<SysInfo::Procinfo_raw> const &prev,
 	return (procinfo);
 }
 
-static void	draw_screen(std::unique_ptr<IVisual> const &ncs,
+static void	draw_screen(std::shared_ptr<IVisual> const &ncs,
 							IVisual::Cpu_usage const &usage,
 							std::vector<IVisual::Procinfo> const &ccur,
-							std::unique_ptr<ISys> const &si)
+							std::shared_ptr<ISys> const &si)
 {
 		ncs->display_cpu_bar(usage);
 		ncs->display_mem_bar(si->get_mem_data());
@@ -93,6 +94,25 @@ static void	draw_screen(std::unique_ptr<IVisual> const &ncs,
 }
 
 /*
+int		key_handler(std::shared_ptr<IVisual> &visual, std::shared_ptr<ISys> &si)
+{
+	int	c{};
+
+	while (c = getch())
+	{
+		switch (c)
+		{
+			case 'q': return (1);
+			case KEY_UP: visual->move_up();
+			case KEY_DOWN: visual->move_down();
+		}
+		visual->display_procs_info(si->get_procs_data());
+	}
+	return (0);
+}
+*/
+
+/*
 ** There are two fundamental interfaces 'IVisual' for data
 ** displayers, 'ISys' for data loaders.
 ** Top works with this interfaces.
@@ -100,14 +120,15 @@ static void	draw_screen(std::unique_ptr<IVisual> const &ncs,
 
 int										main(void)
 {
-	std::unique_ptr<ISys>				si{new SysInfo{}};
-	std::unique_ptr<IVisual>			ncs{new Visual_ncs{}};
+	std::shared_ptr<ISys>				si{new SysInfo{}};
+	std::shared_ptr<IVisual>			ncs{new Visual_ncs{}};
 	IVisual::Cpuinfo					prev{}; // for %Cpu(s) general
 	IVisual::Cpuinfo					cur{};
 	IVisual::Cpu_usage					usage{};
 	std::vector<SysInfo::Procinfo_raw>	pprev{si->get_procs_data()}; // for %CPU per process
 	std::vector<SysInfo::Procinfo_raw> 	ccur;
 	std::vector<IVisual::Procinfo>		procinfo;
+	std::future<void> fut{ncs->run_keyhooker()};
 
 	do
 	{
@@ -121,6 +142,7 @@ int										main(void)
 		ncs->refresh();
 		prev = cur;
 		pprev = ccur;
-	} while ((ncs->read_ch() != 'q'));
+	//} while ((ncs->read_ch() != 'q')); // wait for result from future obj. N seconds (result will be sent if 'q' pressed)
+	} while (fut.wait_for(std::chrono::seconds(3)) == std::future_status::timeout);
 	return (0);
 }

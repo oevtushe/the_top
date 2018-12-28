@@ -82,7 +82,7 @@ ISys::Procinfo_raw	SysInfo::_read_proc_data_hlp(std::ifstream &fstat,
 
 	pi.memp = (static_cast<double>(pi.rss) / _mem.mem_total) * 100.0; // converted to percentage
 	pi.cpu = utime + stime;
-	_threads += (std::stoi(stat_data[19]) - 1); // very smart !
+	_threads += (std::stoi(stat_data[19]) - 1);
  	return (pi);
 }
 

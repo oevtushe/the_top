@@ -11,7 +11,7 @@ include_directories (${INCLUDE_DIRS} ${CURSES_INCLUDE_DIR})
 
 set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -pthread")
 
 add_library (SysInfo SHARED
 		${SRCS_DIR}/SysInfo.cpp
