@@ -1,8 +1,10 @@
 #include "Visual_ncs.hpp"
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 
 bool	operator==(IVisual::Procinfo const &a,
 			IVisual::Procinfo const &b)
@@ -10,7 +12,7 @@ bool	operator==(IVisual::Procinfo const &a,
 	return (a.pid == b.pid);
 }
 
-Visual_ncs::Visual_ncs() : _selected{}
+Visual_ncs::Visual_ncs()
 {
 	::initscr();
 	::start_color();
@@ -22,6 +24,7 @@ Visual_ncs::Visual_ncs() : _selected{}
 	::init_pair(MY_YELLOW, COLOR_YELLOW, COLOR_BLACK);
 	::init_pair(MY_CYAN, COLOR_CYAN, COLOR_BLACK);
 	::init_pair(MY_LINE, COLOR_BLACK, COLOR_CYAN);
+	::init_pair(MY_ULINE, COLOR_BLACK, COLOR_WHITE);
 	_init_windows();
 }
 
@@ -49,6 +52,8 @@ void	Visual_ncs::_init_windows()
 	const int proc_start_y = meters_height + meters_start_y;
 	const int proc_start_x = 0;
 	_processes = newwin(processes_height, processes_width, proc_start_y, proc_start_x);
+	_signals = newwin(processes_height, 16, proc_start_y, proc_start_x); //
+	_is_sig_open = false;
 
 	_vp_start = 0;
 	int x,y;
@@ -79,13 +84,32 @@ void	Visual_ncs::clean_screen() const
 	::werase(_meters);
 	::werase(_text_info);
 	::werase(_processes);
+	if (_is_sig_open)
+		::werase(_signals);
 }
 
 void	Visual_ncs::refresh() const
 {
-	::wrefresh(_meters);
-	::wrefresh(_text_info);
-	::wrefresh(_processes);
+	::wnoutrefresh(_meters);
+	::wnoutrefresh(_text_info);
+	::wnoutrefresh(_processes);
+	if (_is_sig_open)
+		::wnoutrefresh(_signals);
+	::doupdate();
+}
+
+void	Visual_ncs::draw_screen(Visual_db const &db)
+{
+		display_cpu_bar(db.usage);
+		display_mem_bar(db.meminfo);
+		display_swap_bar(db.meminfo);
+		int	running = std::count_if(db.procinfo.begin(), db.procinfo.end(), [](IVisual::Procinfo const &p) { return (p.state == 'R'); });
+		display_right_window(db.threads, db.procinfo.size(),
+				running, db.load_avg, db.uptime);
+		display_procs_info(db.procinfo);
+		if (_is_sig_open)
+			_draw_signal_win();
+		_display_cursor();
 }
 
 std::future<void>	Visual_ncs::run_key_handler()
@@ -93,34 +117,152 @@ std::future<void>	Visual_ncs::run_key_handler()
 	return (std::async(std::launch::async, &Visual_ncs::_key_handler, this));
 }
 
+void	Visual_ncs::_open_signal_window()
+{
+	int x, y;
+	int max_x, max_y;
+
+	getbegyx(_processes, y, x);
+	getmaxyx(_processes, max_y, max_x);
+	wborder(_signals, '|', '|', '-', '-', '+', '+', '+', '+');
+	werase(_processes);
+	wrefresh(_processes);
+	delwin(_processes);
+	_processes = newwin(max_y, COLS - 16, y, x + 16);
+	wborder(_processes, '|', '|', '-', '-', '+', '+', '+', '+');
+	wrefresh(_signals);
+	wrefresh(_processes);
+	_is_sig_open = true;
+	_draw_signal_win();
+	::keypad(_processes, FALSE);
+	::keypad(_signals, TRUE);
+}
+
+void	Visual_ncs::_close_signal_window()
+{
+	int x, y;
+	int max_x, max_y;
+
+	getbegyx(_signals, y, x);
+	getmaxyx(_signals, max_y, max_x);
+	werase(_signals);
+	wnoutrefresh(_signals);
+	_is_sig_open = false;
+	werase(_processes);
+	wrefresh(_processes);
+	delwin(_processes);
+	_processes = newwin(max_y, COLS, y, x);
+	::keypad(_signals, FALSE);
+	::keypad(_processes, TRUE);
+}
+
+void	Visual_ncs::_draw_signal_win()
+{
+	mvwprintw(_signals, 1, 1, "Send signal:");
+	mvwprintw(_signals, 2, 1, "SIGKILL");
+	mvwprintw(_signals, 3, 1, "Cancel");
+	int x, y;
+	getmaxyx(_signals, y, x);
+	mvwchgat(_signals, 1, 1, x - 2, A_NORMAL, MY_HEADER, nullptr);
+	//wrefresh(_signals);
+}
+
+int		Visual_ncs::_key_processes(int c)
+{
+	switch (c)
+	{
+		case 'q': return (-1);
+		case 'k':
+				  _open_signal_window();
+				  break ;
+		case KEY_UP:
+				  {
+					  _handle_up_vp_border();
+					  break ;
+				  }
+		case KEY_DOWN:
+				  {
+					  _handle_down_vp_border();
+					  break ;
+				  }
+		case KEY_RESIZE:
+				  {
+					  _del_wins();
+					  ::refresh();
+					  _init_windows();
+					  break ;
+				  }
+	}
+	werase(_processes);
+	wborder(_processes, '|', '|', '-', '-', '+', '+', '+', '+');
+	display_procs_info(_procinfo);
+	_display_cursor();
+	wrefresh(_processes);
+	return (0);
+}
+
+int		Visual_ncs::_get_selected_pid()
+{
+	return (_procinfo[_selected + _vp_start].pid);
+}
+
+// i need to remember to which pid _selected is bounded
+int		Visual_ncs::_key_signals(int c)
+{
+	switch (c)
+	{
+		case KEY_UP:
+			{
+				if (_sig_selected)
+					--_sig_selected;
+				break ;
+			}
+		case KEY_DOWN:
+			{
+				if (_sig_selected < 1)
+					++_sig_selected;
+				break ;
+			}
+		case 10: // Enter
+			{
+				if (_sig_selected == 0)
+				{
+					int pid = _get_selected_pid();
+					kill(_get_selected_pid(), SIGTERM);
+				}
+				// no break !
+			}
+		case 'q':
+			{
+				_close_signal_window();
+				display_procs_info(_procinfo);
+				_display_cursor();
+				wrefresh(_processes);
+				return (10);
+			}
+	}
+	werase(_signals);
+	wborder(_signals, '|', '|', '-', '-', '+', '+', '+', '+');
+	display_procs_info(_procinfo);
+	_draw_signal_win();
+	_display_cursor();
+	wrefresh(_signals);
+	return (0);
+}
+
 void	Visual_ncs::_key_handler()
 {
-	while (int c = wgetch(_processes))
+	int		res{};
+	WINDOW	*ptr{_processes};
+	int		c{};
+
+	while ((res != -1) && (c = wgetch(ptr)))
 	{
-		switch (c)
-		{
-			case 'q': return ;
-			case KEY_UP:
-			{
-				_handle_up_vp_border();
-				break ;
-			}
-			case KEY_DOWN:
-			{
-				_handle_down_vp_border();
-			  	break ;
-			}
-			case KEY_RESIZE:
-			{
-				_del_wins();
-				::refresh();
-				_init_windows();
-				break ;
-			}
-		}
-		werase(_processes);
-		display_procs_info(_procinfo);
-		wrefresh(_processes);
+		if (_is_sig_open)
+			res = _key_signals(c);
+		else
+			res = _key_processes(c);
+		ptr = _is_sig_open ? _signals : _processes;
 	}
 }
 
@@ -206,8 +348,7 @@ void	Visual_ncs::display_cpu_bar(IVisual::Cpu_usage const &usage)
 	getmaxyx(_meters, y, x);
 	y = 1; // line pos in cur _meters window
 	mvwprintw(_meters, y, 1, bar_lb);
-	const int bar_size = (x - strlen(bar_lb) - strlen(bar_rb) - 2) / 100.0; // -2 excludes borders
-
+	const double bar = (x - strlen(bar_lb) - strlen(bar_rb) - 2) / 100.0; // -2 excludes borders
 	const double mytot = usage.ni + usage.us + usage.sy +
 					usage.wa + usage.hi + usage.si + usage.st;
 
@@ -219,10 +360,10 @@ void	Visual_ncs::display_cpu_bar(IVisual::Cpu_usage const &usage)
 					"%s", os.str().c_str()); // -1 excludes borders
 	wmove(_meters, y, strlen(bar_lb) + 1);
 
-	const int times_ni = bar_size * usage.ni + 0.5;
-	const int times_us = bar_size * usage.us + 0.5;
-	const int times_kernel = bar_size * (usage.sy + usage.wa + usage.hi) + 0.5;
-	const int times_virt = bar_size * (usage.si + usage.st) + 0.5;
+	const int times_ni = bar * usage.ni + 0.5;
+	const int times_us = bar * usage.us + 0.5;
+	const int times_kernel = bar * (usage.sy + usage.wa + usage.hi) + 0.5;
+	const int times_virt = bar * (usage.si + usage.st) + 0.5;
 	display_meter(MY_BLUE, times_ni);
 	display_meter(MY_GREEN, times_us);
 	display_meter(MY_RED, times_kernel);
@@ -325,7 +466,9 @@ void	Visual_ncs::_display_header()
 			"%MEM",
 			"TIME+",
 			"COMMAND");
-	mvwchgat(_processes, 1, 1, COLS - 2, A_NORMAL, MY_HEADER, NULL);
+	int x, y;
+	getmaxyx(_processes, y, x);
+	mvwchgat(_processes, 1, 1, x - 2, A_NORMAL, MY_HEADER, NULL);
 	wmove(_processes, 1, 1);
 }
 
@@ -356,7 +499,6 @@ void	Visual_ncs::display_procs_info(std::vector<IVisual::Procinfo> const &pi)
 				pi[i].command.c_str());
 	}
 	_procinfo = pi; // steal data for key_handler
-	_display_cursor();
 }
 
 void	Visual_ncs::_display_cursor()
@@ -365,5 +507,14 @@ void	Visual_ncs::_display_cursor()
 	// position is too low
 	if (_selected >= _procinfo.size())
 		_selected = _procinfo.size() - 1;
-	mvwchgat(_processes, _selected + 2, 1, COLS - 2, A_NORMAL, MY_LINE, NULL);
+	int x, y;
+	getmaxyx(_processes, y, x);
+	if (!_is_sig_open)
+		mvwchgat(_processes, _selected + 2, 1, x - 2, A_NORMAL, MY_LINE, nullptr);
+	else
+	{
+		mvwchgat(_processes, _selected + 2, 1, x - 2, A_NORMAL, MY_ULINE, nullptr);
+		getmaxyx(_signals, y, x);
+		mvwchgat(_signals, _sig_selected + 2, 1, x - 2, A_NORMAL, MY_LINE, nullptr);
+	}
 }

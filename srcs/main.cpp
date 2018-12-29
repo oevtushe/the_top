@@ -79,6 +79,7 @@ get_procinfo(std::vector<SysInfo::Procinfo_raw> const &prev,
 	return (procinfo);
 }
 
+/*
 static void	draw_screen(std::shared_ptr<IVisual> const &ncs,
 							IVisual::Cpu_usage const &usage,
 							std::vector<IVisual::Procinfo> const &ccur,
@@ -91,6 +92,21 @@ static void	draw_screen(std::shared_ptr<IVisual> const &ncs,
 		ncs->display_right_window(si->get_thread_num(), ccur.size(),
 				running, si->get_loadavg(), si->get_uptime());
 		ncs->display_procs_info(ccur);
+}
+*/
+
+void	fill_vdb(IVisual::Visual_db	&vdb,
+					std::shared_ptr<ISys> const &si,
+					IVisual::Cpu_usage const &usage,
+					std::vector<IVisual::Procinfo> const &procinfo)
+{
+	vdb.usage = usage;
+	vdb.procinfo = procinfo;
+	//vdb.cpuinfo = cpuinfo;
+	vdb.meminfo = si->get_mem_data();
+	vdb.load_avg = si->get_loadavg();
+	vdb.threads = si->get_thread_num();
+	vdb.uptime = si->get_uptime();
 }
 
 /*
@@ -110,6 +126,7 @@ int										main(void)
 	std::vector<SysInfo::Procinfo_raw>	pprev{si->get_procs_data()}; // for %CPU per process
 	std::vector<SysInfo::Procinfo_raw> 	ccur;
 	std::vector<IVisual::Procinfo>		procinfo;
+	IVisual::Visual_db					vdb{};
 	std::future<void> fut{ncs->run_key_handler()};
 
 	do
@@ -120,7 +137,8 @@ int										main(void)
 		ccur = si->get_procs_data();
 		usage = calc_cpu_usage(prev, cur);
 		procinfo = get_procinfo(pprev, ccur, usage.total);
-		draw_screen(ncs, usage, procinfo, si);
+		fill_vdb(vdb, si, usage, procinfo);
+		ncs->draw_screen(vdb);
 		ncs->refresh();
 		prev = cur;
 		pprev = ccur;
