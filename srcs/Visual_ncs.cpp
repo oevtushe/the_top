@@ -75,9 +75,12 @@ void	Visual_ncs::_init_windows()
 	_is_sig_open = false;
 
 	_vp_start = 0;
+	_sig_start = 0;
 	int x,y;
 	getmaxyx(_processes, y, x);
 	_vp_end = y - 3; // -3 is 2 borders, 1 header line
+	_sig_end = _vp_end;
+	_sig_selected = _sig_start;
 	_selected = _vp_start;
 	::keypad(_processes, TRUE);
 }
@@ -178,15 +181,41 @@ void	Visual_ncs::_close_signal_window()
 void	Visual_ncs::_draw_signal_win()
 {
 	mvwprintw(_signals, 1, 1, "Send signal:");
-	int	i{1};
-	for (auto &item : _vsignals)
+	for (int j = _sig_start, i = 2; j < _sig_end; ++j, ++i)
 	{
-		mvwprintw(_signals, ++i, 1, "%s", item.second.c_str());
+		mvwprintw(_signals, i, 1, "%s", _vsignals[j].second.c_str());
 	}
-	mvwprintw(_signals, ++i, 1, "Cancel");
 	int x, y;
 	getmaxyx(_signals, y, x);
 	mvwchgat(_signals, 1, 1, x - 2, A_NORMAL, MY_HEADER, nullptr);
+}
+
+static void	handle_up_vp_border(unsigned int &selector, unsigned int &start, unsigned int &finish)
+{
+	if (selector)
+		--selector;
+	else
+	{
+		if (start)
+		{
+			--start;
+			--finish;
+		}
+	}
+}
+
+static void	handle_down_vp_border(unsigned int &selector, unsigned int &start, unsigned int &finish, int size)
+{
+	if (selector + start + 1 >= finish)
+	{
+		if (finish < size)
+		{
+			++finish;
+			++start;
+		}
+	}
+	else if (selector  + 1 < size)
+		++selector;
 }
 
 int		Visual_ncs::_key_processes(int c)
@@ -200,12 +229,12 @@ int		Visual_ncs::_key_processes(int c)
 				  break ;
 		case KEY_UP:
 				  {
-					  _handle_up_vp_border();
+					  handle_up_vp_border(_selected, _vp_start, _vp_end);
 					  break ;
 				  }
 		case KEY_DOWN:
 				  {
-					  _handle_down_vp_border();
+					  handle_down_vp_border(_selected, _vp_start, _vp_end, _procinfo.size());
 					  break ;
 				  }
 		case KEY_RESIZE:
@@ -236,14 +265,12 @@ int		Visual_ncs::_key_signals(int c)
 	{
 		case KEY_UP:
 			{
-				if (_sig_selected)
-					--_sig_selected;
+				handle_up_vp_border(_sig_selected, _sig_start, _sig_end);
 				break ;
 			}
 		case KEY_DOWN:
 			{
-				if (_sig_selected < _vsignals.size())
-					++_sig_selected;
+				handle_down_vp_border(_sig_selected, _sig_start, _sig_end, _vsignals.size());
 				break ;
 			}
 		case 10: // Enter
@@ -260,6 +287,13 @@ int		Visual_ncs::_key_signals(int c)
 				wrefresh(_processes);
 				return (10);
 			}
+		case KEY_RESIZE:
+				  {
+					  _del_wins();
+					  ::refresh();
+					  _init_windows();
+					  break ;
+				  }
 	}
 	werase(_signals);
 	wborder(_signals, '|', '|', '-', '-', '+', '+', '+', '+');
@@ -284,34 +318,6 @@ void	Visual_ncs::_key_handler()
 			res = _key_processes(c);
 		ptr = _is_sig_open ? _signals : _processes;
 	}
-}
-
-void	Visual_ncs::_handle_up_vp_border()
-{
-	if (_selected)
-		--_selected;
-	else
-	{
-		if (_vp_start)
-		{
-			--_vp_start;
-			--_vp_end;
-		}
-	}
-}
-
-void	Visual_ncs::_handle_down_vp_border()
-{
-	if (_selected + _vp_start + 1 >= _vp_end)
-	{
-		if (_vp_end < _procinfo.size())
-		{
-			++_vp_end;
-			++_vp_start;
-		}
-	}
-	else if (_selected  + 1 < _procinfo.size())
-		++_selected;
 }
 
 void	Visual_ncs::display_meter(int cp, int times)

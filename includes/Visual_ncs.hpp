@@ -30,6 +30,8 @@ class Visual_ncs : public IVisual
 		unsigned int					_selected{};
 		unsigned int					_vp_start; // vp -> view point
 		unsigned int					_vp_end;
+		unsigned int					_sig_start;
+		unsigned int					_sig_end;
 		WINDOW							*_meters;
 		WINDOW							*_text_info;
 		WINDOW							*_processes;
@@ -41,8 +43,6 @@ class Visual_ncs : public IVisual
 		void							_display_cursor();
 		void							_init_windows();
 		void							_del_wins();
-		void							_handle_up_vp_border();
-		void							_handle_down_vp_border();
 		void							_display_header();
 		void							_open_signal_window();
 		void							_close_signal_window();
