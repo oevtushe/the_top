@@ -26,6 +26,25 @@ Visual_ncs::Visual_ncs()
 	::init_pair(MY_LINE, COLOR_BLACK, COLOR_CYAN);
 	::init_pair(MY_ULINE, COLOR_BLACK, COLOR_WHITE);
 	_init_windows();
+	_vsignals.push_back({SIGHUP, "SIGHUP"});
+	_vsignals.push_back({SIGINT, "SIGINT"});
+	_vsignals.push_back({SIGQUIT, "SIGQUIT"});
+	_vsignals.push_back({SIGILL, "SIGILL"});
+	_vsignals.push_back({SIGABRT, "SIGABRT"});
+	_vsignals.push_back({SIGFPE, "SIGFPE"});
+	_vsignals.push_back({SIGKILL, "SIGKILL"});
+	_vsignals.push_back({SIGSEGV, "SIGSEGV"});
+	_vsignals.push_back({SIGPIPE, "SIGPIPE"});
+	_vsignals.push_back({SIGALRM, "SIGALRM"});
+	_vsignals.push_back({SIGTERM, "SIGTERM"});
+	_vsignals.push_back({SIGUSR1, "SIGUSR1"});
+	_vsignals.push_back({SIGUSR2, "SIGUSR2"});
+	_vsignals.push_back({SIGCHLD, "SIGCHLD"});
+	_vsignals.push_back({SIGCONT, "SIGCONT"});
+	_vsignals.push_back({SIGSTOP, "SIGSTOP"});
+	_vsignals.push_back({SIGTSTP, "SIGTSTP"});
+	_vsignals.push_back({SIGTTIN, "SIGTTIN"});
+	_vsignals.push_back({SIGTTOU, "SIGTTOU"});
 }
 
 void	Visual_ncs::_init_windows()
@@ -159,12 +178,15 @@ void	Visual_ncs::_close_signal_window()
 void	Visual_ncs::_draw_signal_win()
 {
 	mvwprintw(_signals, 1, 1, "Send signal:");
-	mvwprintw(_signals, 2, 1, "SIGKILL");
-	mvwprintw(_signals, 3, 1, "Cancel");
+	int	i{1};
+	for (auto &item : _vsignals)
+	{
+		mvwprintw(_signals, ++i, 1, "%s", item.second.c_str());
+	}
+	mvwprintw(_signals, ++i, 1, "Cancel");
 	int x, y;
 	getmaxyx(_signals, y, x);
 	mvwchgat(_signals, 1, 1, x - 2, A_NORMAL, MY_HEADER, nullptr);
-	//wrefresh(_signals);
 }
 
 int		Visual_ncs::_key_processes(int c)
@@ -174,6 +196,7 @@ int		Visual_ncs::_key_processes(int c)
 		case 'q': return (-1);
 		case 'k':
 				  _open_signal_window();
+				  _selected_proc = _procinfo[_selected];
 				  break ;
 		case KEY_UP:
 				  {
@@ -219,17 +242,14 @@ int		Visual_ncs::_key_signals(int c)
 			}
 		case KEY_DOWN:
 			{
-				if (_sig_selected < 1)
+				if (_sig_selected < _vsignals.size())
 					++_sig_selected;
 				break ;
 			}
 		case 10: // Enter
 			{
-				if (_sig_selected == 0)
-				{
-					int pid = _get_selected_pid();
-					kill(_get_selected_pid(), SIGTERM);
-				}
+				if (_sig_selected < _vsignals.size()) // ignore Cancel
+					kill(_get_selected_pid(), _vsignals[_sig_selected].first);
 				// no break !
 			}
 		case 'q':
@@ -513,6 +533,7 @@ void	Visual_ncs::_display_cursor()
 		mvwchgat(_processes, _selected + 2, 1, x - 2, A_NORMAL, MY_LINE, nullptr);
 	else
 	{
+		_selected = std::find(_procinfo.begin(), _procinfo.end(), _selected_proc) - _procinfo.begin();
 		mvwchgat(_processes, _selected + 2, 1, x - 2, A_NORMAL, MY_ULINE, nullptr);
 		getmaxyx(_signals, y, x);
 		mvwchgat(_signals, _sig_selected + 2, 1, x - 2, A_NORMAL, MY_LINE, nullptr);

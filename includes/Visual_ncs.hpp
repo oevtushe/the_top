@@ -26,6 +26,7 @@ class Visual_ncs : public IVisual
 		void				draw_screen(Visual_db const &db);
 	private:
 		unsigned int					_sig_selected{};
+		IVisual::Procinfo				_selected_proc;
 		unsigned int					_selected{};
 		unsigned int					_vp_start; // vp -> view point
 		unsigned int					_vp_end;
@@ -35,6 +36,7 @@ class Visual_ncs : public IVisual
 		WINDOW							*_signals;
 		bool							_is_sig_open;
 		std::vector<IVisual::Procinfo>	_procinfo;
+		std::vector<std::pair<int,std::string>>	_vsignals;
 		void							_key_handler();
 		void							_display_cursor();
 		void							_init_windows();
