@@ -42,6 +42,7 @@ class Visual_ncs : public IVisual
 		void							_key_handler();
 		void							_display_cursor();
 		void							_init_windows();
+		void							_init_signals();
 		void							_del_wins();
 		void							_display_header();
 		void							_open_signal_window();

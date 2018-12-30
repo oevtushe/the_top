@@ -26,6 +26,11 @@ Visual_ncs::Visual_ncs()
 	::init_pair(MY_LINE, COLOR_BLACK, COLOR_CYAN);
 	::init_pair(MY_ULINE, COLOR_BLACK, COLOR_WHITE);
 	_init_windows();
+	_init_signals();
+}
+
+void	Visual_ncs::_init_signals()
+{
 	_vsignals.push_back({SIGHUP, "SIGHUP"});
 	_vsignals.push_back({SIGINT, "SIGINT"});
 	_vsignals.push_back({SIGQUIT, "SIGQUIT"});
@@ -93,6 +98,7 @@ void	Visual_ncs::_del_wins()
 	delwin(_meters);
 	delwin(_text_info);
 	delwin(_processes);
+	delwin(_signals);
 }
 
 Visual_ncs::~Visual_ncs()
@@ -214,7 +220,7 @@ static void	handle_down_vp_border(unsigned int &selector, unsigned int &start, u
 			++start;
 		}
 	}
-	else if (selector  + 1 < size)
+	else if (selector + 1 < size)
 		++selector;
 }
 
@@ -224,26 +230,28 @@ int		Visual_ncs::_key_processes(int c)
 	{
 		case 'q': return (-1);
 		case 'k':
-				  _open_signal_window();
-				  _selected_proc = _procinfo[_selected];
-				  break ;
+		{
+			_open_signal_window();
+			_selected_proc = _procinfo[_selected];
+			break ;
+		}
 		case KEY_UP:
-				  {
-					  handle_up_vp_border(_selected, _vp_start, _vp_end);
-					  break ;
-				  }
+		{
+			handle_up_vp_border(_selected, _vp_start, _vp_end);
+			break ;
+		}
 		case KEY_DOWN:
-				  {
-					  handle_down_vp_border(_selected, _vp_start, _vp_end, _procinfo.size());
-					  break ;
-				  }
+		{
+			handle_down_vp_border(_selected, _vp_start, _vp_end, _procinfo.size());
+			break ;
+		}
 		case KEY_RESIZE:
-				  {
-					  _del_wins();
-					  ::refresh();
-					  _init_windows();
-					  break ;
-				  }
+		{
+			_del_wins();
+			::refresh();
+			_init_windows();
+			break ;
+		}
 	}
 	werase(_processes);
 	wborder(_processes, '|', '|', '-', '-', '+', '+', '+', '+');
@@ -258,42 +266,40 @@ int		Visual_ncs::_get_selected_pid()
 	return (_procinfo[_selected + _vp_start].pid);
 }
 
-// i need to remember to which pid _selected is bounded
 int		Visual_ncs::_key_signals(int c)
 {
 	switch (c)
 	{
 		case KEY_UP:
-			{
-				handle_up_vp_border(_sig_selected, _sig_start, _sig_end);
-				break ;
-			}
+		{
+			handle_up_vp_border(_sig_selected, _sig_start, _sig_end);
+			break ;
+		}
 		case KEY_DOWN:
-			{
-				handle_down_vp_border(_sig_selected, _sig_start, _sig_end, _vsignals.size());
-				break ;
-			}
+		{
+			handle_down_vp_border(_sig_selected, _sig_start, _sig_end, _vsignals.size());
+			break ;
+		}
 		case 10: // Enter
-			{
-				if (_sig_selected < _vsignals.size()) // ignore Cancel
-					kill(_get_selected_pid(), _vsignals[_sig_selected].first);
-				// no break !
-			}
+		{
+			kill(_get_selected_pid(), _vsignals[_sig_selected].first);
+			// no break !
+		}
 		case 'q':
-			{
-				_close_signal_window();
-				display_procs_info(_procinfo);
-				_display_cursor();
-				wrefresh(_processes);
-				return (10);
-			}
+		{
+			_close_signal_window();
+			display_procs_info(_procinfo);
+			_display_cursor();
+			wrefresh(_processes);
+			return (10);
+		}
 		case KEY_RESIZE:
-				  {
-					  _del_wins();
-					  ::refresh();
-					  _init_windows();
-					  break ;
-				  }
+		{
+			_del_wins();
+			::refresh();
+			_init_windows();
+			break ;
+		}
 	}
 	werase(_signals);
 	wborder(_signals, '|', '|', '-', '-', '+', '+', '+', '+');
@@ -531,8 +537,8 @@ void	Visual_ncs::_display_cursor()
 {
 	// move 'selected' back if prev
 	// position is too low
-	if (_selected >= _procinfo.size())
-		_selected = _procinfo.size() - 1;
+	if (_selected + _vp_start >= _procinfo.size())
+		_selected = 0;
 	int x, y;
 	getmaxyx(_processes, y, x);
 	if (!_is_sig_open)
