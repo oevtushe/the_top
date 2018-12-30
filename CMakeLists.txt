@@ -19,6 +19,7 @@ add_library (SysInfo SHARED
 )
 add_library (Visual_ncs SHARED
 		${SRCS_DIR}/Visual_ncs.cpp
+		${SRCS_DIR}/ProcessWindow.cpp
 )
 
 add_executable (${CMAKE_PROJECT_NAME} ${SRCS_DIR}/main.cpp)

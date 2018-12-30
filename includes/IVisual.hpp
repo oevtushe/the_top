@@ -68,7 +68,7 @@ class IVisual : public IIntermediate
 		virtual void	display_swap_bar(IVisual::Meminfo const &memi) = 0;
 		virtual void	display_right_window(int threads, int tasks, int r,
 			IVisual::Load_avg const &load_avg, long int uptime) = 0;
-		virtual void	display_procs_info(std::vector<Procinfo> const &) = 0;
+		//virtual void	display_procs_info(std::vector<Procinfo> const &) = 0;
 		virtual std::future<void>	run_key_handler() = 0;
 		virtual void				draw_screen(Visual_db const &db) = 0;
 };
