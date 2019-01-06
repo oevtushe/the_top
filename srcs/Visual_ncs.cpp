@@ -16,6 +16,8 @@ Visual_ncs::Visual_ncs() : _pw{}
 {
 	::initscr();
 	::start_color();
+	::noecho();
+	::cbreak();
 	::curs_set(0);
 	::init_pair(MY_HEADER, COLOR_BLACK, COLOR_GREEN);
 	::init_pair(MY_RED, COLOR_RED, COLOR_BLACK);
@@ -26,30 +28,6 @@ Visual_ncs::Visual_ncs() : _pw{}
 	::init_pair(MY_LINE, COLOR_BLACK, COLOR_CYAN);
 	::init_pair(MY_ULINE, COLOR_BLACK, COLOR_WHITE);
 	_init_windows();
-	_init_signals();
-}
-
-void	Visual_ncs::_init_signals()
-{
-	_vsignals.push_back({SIGHUP, "SIGHUP"});
-	_vsignals.push_back({SIGINT, "SIGINT"});
-	_vsignals.push_back({SIGQUIT, "SIGQUIT"});
-	_vsignals.push_back({SIGILL, "SIGILL"});
-	_vsignals.push_back({SIGABRT, "SIGABRT"});
-	_vsignals.push_back({SIGFPE, "SIGFPE"});
-	_vsignals.push_back({SIGKILL, "SIGKILL"});
-	_vsignals.push_back({SIGSEGV, "SIGSEGV"});
-	_vsignals.push_back({SIGPIPE, "SIGPIPE"});
-	_vsignals.push_back({SIGALRM, "SIGALRM"});
-	_vsignals.push_back({SIGTERM, "SIGTERM"});
-	_vsignals.push_back({SIGUSR1, "SIGUSR1"});
-	_vsignals.push_back({SIGUSR2, "SIGUSR2"});
-	_vsignals.push_back({SIGCHLD, "SIGCHLD"});
-	_vsignals.push_back({SIGCONT, "SIGCONT"});
-	_vsignals.push_back({SIGSTOP, "SIGSTOP"});
-	_vsignals.push_back({SIGTSTP, "SIGTSTP"});
-	_vsignals.push_back({SIGTTIN, "SIGTTIN"});
-	_vsignals.push_back({SIGTTOU, "SIGTTOU"});
 }
 
 void	Visual_ncs::_init_windows()
@@ -65,31 +43,19 @@ void	Visual_ncs::_init_windows()
 	const int meters_start_y = 1;
 	_meters = newwin(meters_height, meters_width, meters_start_y, meters_start_x);
 
-	const int text_info_height = meters_height;
-	const int text_info_width = meters_width;
 	const int text_info_start_x = meters_width + meters_start_x + space_between;
-	const int text_info_start_y = meters_start_y;
-	_text_info = newwin(text_info_height, text_info_width, text_info_start_y, text_info_start_x);
+	_text_info = newwin(meters_height, meters_width, meters_start_y, text_info_start_x);
 
 	const int processes_height = LINES - meters_height - meters_start_y;
 	const int processes_width = COLS;
 	const int proc_start_y = meters_height + meters_start_y;
 	const int proc_start_x = 0;
 	_pw = new ProcessWindow(processes_height, processes_width, proc_start_y, proc_start_x);
-	_signals = newwin(processes_height, 16, proc_start_y, proc_start_x); //
-	_is_sig_open = false;
 
-	/*
-	//_vp_start = 0;
-	_sig_start = 0;
-	int x,y;
-	getmaxyx(_processes, y, x);
-	//_vp_end = y - 3; // -3 is 2 borders, 1 header line
-	_sig_end = _vp_end;
-	_sig_selected = _sig_start;
-	_selected = _vp_start;
-	*/
-	//::keypad(_processes, TRUE);//
+	const int sig_width = 16;
+	_sw = new SignalsWindow(processes_height, sig_width, proc_start_y, proc_start_x);
+
+	::keypad(_meters, TRUE);
 }
 
 void	Visual_ncs::_del_wins()
@@ -99,14 +65,13 @@ void	Visual_ncs::_del_wins()
 	refresh();
 	delwin(_meters);
 	delwin(_text_info);
-	//delwin(_processes);
-	delwin(_signals);
+	delete _pw;
+	delete _sw;
 }
 
 Visual_ncs::~Visual_ncs()
 {
 	_del_wins();
-	delete _pw;
 	::endwin();
 }
 
@@ -114,21 +79,18 @@ void	Visual_ncs::clean_screen() const
 {
 	::werase(_meters);
 	::werase(_text_info);
-	//::werase(_processes);
 	_pw->erase();
-	if (_is_sig_open)
-		::werase(_signals);
+	if (_is_signals_visible)
+		_sw->erase();
 }
 
-void	Visual_ncs::refresh() const
+void	Visual_ncs::refresh() const // make private
 {
-	::wnoutrefresh(_meters);
-	::wnoutrefresh(_text_info);
-	//::wnoutrefresh(_processes);
+	::wrefresh(_meters);
+	::wrefresh(_text_info);
 	_pw->refresh();
-	if (_is_sig_open)
-		::wnoutrefresh(_signals);
-	::doupdate();
+	if (_is_signals_visible)
+		_sw->refresh();
 }
 
 void	Visual_ncs::draw_screen(Visual_db const &db)
@@ -137,108 +99,18 @@ void	Visual_ncs::draw_screen(Visual_db const &db)
 		display_mem_bar(db.meminfo);
 		display_swap_bar(db.meminfo);
 		int	running = std::count_if(db.procinfo.begin(), db.procinfo.end(), [](IVisual::Procinfo const &p) { return (p.state == 'R'); });
-		display_right_window(db.threads, db.procinfo.size(),
+		display_right_window(db.threads, db.procinfo.size(), // make private
 				running, db.load_avg, db.uptime);
-		//display_procs_info(db.procinfo);
-		_pw->draw(db.procinfo);
-		if (_is_sig_open)
-			_draw_signal_win();
-		//_display_cursor();
+		_pw->set_data(db.procinfo);
+		_pw->draw();
+		if (_is_signals_visible)
+			_sw->draw();
 }
 
 std::future<void>	Visual_ncs::run_key_handler()
 {
 	return (std::async(std::launch::async, &Visual_ncs::_key_handler, this));
 }
-
-/*
-void	Visual_ncs::_open_signal_window()
-{
-	int x, y;
-	int max_x, max_y;
-
-	getbegyx(_processes, y, x);
-	getmaxyx(_processes, max_y, max_x);
-	wborder(_signals, '|', '|', '-', '-', '+', '+', '+', '+');
-	// -------------------------
-	werase(_processes);
-	wrefresh(_processes);
-	delwin(_processes);
-	// -------------------------
-	_processes = newwin(max_y, COLS - 16, y, x + 16);
-	wborder(_processes, '|', '|', '-', '-', '+', '+', '+', '+');
-	wrefresh(_signals);
-	wrefresh(_processes);
-	_draw_signal_win();
-	::keypad(_processes, FALSE);
-	::keypad(_signals, TRUE);
-	_is_sig_open = true;
-}
-*/
-/*
-void	Visual_ncs::_close_signal_window()
-{
-	int x, y;
-	int max_x, max_y;
-
-	getbegyx(_signals, y, x);
-	getmaxyx(_signals, max_y, max_x);
-	werase(_signals);
-	wnoutrefresh(_signals);
-	// -------------------------
-	_pw.clear();
-	werase(_processes);
-	wrefresh(_processes);
-	delwin(_processes);
-	// -------------------------
-	_processes = newwin(max_y, COLS, y, x);
-	::keypad(_signals, FALSE);
-	::keypad(_processes, TRUE);
-	_is_sig_open = false;
-}
-*/
-
-void	Visual_ncs::_draw_signal_win()
-{
-	mvwprintw(_signals, 1, 1, "Send signal:");
-	for (int j = _sig_start, i = 2; j < _sig_end; ++j, ++i)
-	{
-		mvwprintw(_signals, i, 1, "%s", _vsignals[j].second.c_str());
-	}
-	int x, y;
-	getmaxyx(_signals, y, x);
-	mvwchgat(_signals, 1, 1, x - 2, A_NORMAL, MY_HEADER, nullptr);
-}
-
-/*
-static void	handle_up_vp_border(unsigned int &selector, unsigned int &start, unsigned int &finish)
-{
-	if (selector)
-		--selector;
-	else
-	{
-		if (start)
-		{
-			--start;
-			--finish;
-		}
-	}
-}
-
-static void	handle_down_vp_border(unsigned int &selector, unsigned int &start, unsigned int &finish, int size)
-{
-	if (selector + start + 1 >= finish)
-	{
-		if (finish < size)
-		{
-			++finish;
-			++start;
-		}
-	}
-	else if (selector + 1 < size)
-		++selector;
-}
-*/
 
 void	Visual_ncs::_resize()
 {
@@ -247,74 +119,62 @@ void	Visual_ncs::_resize()
 	_init_windows();
 }
 
-/*
-int		Visual_ncs::_get_selected_pid()
+void	Visual_ncs::_open_signals_window()
 {
-	return (_procinfo[_selected + _vp_start].pid);
-}
-*/
+	std::pair<int,int> proc_size{_pw->get_size()};
+	std::pair<int,int> proc_pos{_pw->get_pos()};
+	std::pair<int,int> sig_size{_sw->get_size()};
+	std::pair<int,int> sig_pos{_sw->get_pos()};
 
-/*
-int		Visual_ncs::_key_signals(int c)
-{
-	switch (c)
-	{
-		case KEY_UP:
-		{
-			handle_up_vp_border(_sig_selected, _sig_start, _sig_end);
-			break ;
-		}
-		case KEY_DOWN:
-		{
-			handle_down_vp_border(_sig_selected, _sig_start, _sig_end, _vsignals.size());
-			break ;
-		}
-		case 10: // Enter
-		{
-			kill(_get_selected_pid(), _vsignals[_sig_selected].first);
-			// no break !
-		}
-		case 'q':
-		{
-			_close_signal_window();
-			display_procs_info(_procinfo);
-			_display_cursor();
-			wrefresh(_processes);
-			return (10);
-		}
-		case KEY_RESIZE:
-		{
-			_resize();
-			break ;
-		}
-	}
-	werase(_signals);
-	wborder(_signals, '|', '|', '-', '-', '+', '+', '+', '+');
-	// ~~~~~~~~~~~~~~~~~~~~~
-	display_procs_info(_procinfo);
-	_draw_signal_win();
-	_display_cursor();
-	// ~~~~~~~~~~~~~~~~~~~~~
-	wrefresh(_signals);
-	return (0);
+	// put process window right to signal window
+	_pw->resize(proc_size.first, COLS - sig_size.second,
+			proc_pos.first, proc_pos.second + sig_size.second);
+	_sw->draw();
+	_sw->refresh();
+	_pw->draw();
+	_pw->refresh();
 }
-*/
 
 void	Visual_ncs::_key_handler()
 {
-	int		res{};
-	//WINDOW	*ptr{_processes};
-	//int		c{};
-
-	while ((res != -1))
+	while (true)
 	{
-		/*
-		if (_is_sig_open)
-			res = _key_signals(c);
-		else
-		*/
-		res = _pw->handle_input();
-		//ptr = _is_sig_open ? _signals : _processes;
+		switch (int c = wgetch(_meters))
+		{
+			case 'k':
+				if (!_is_signals_visible)
+				{
+					_pw->freeze();
+					_open_signals_window();
+					_is_signals_visible = true;
+				}
+				break ;
+			case 'q':
+				if (_is_signals_visible)
+				{
+					_sw->clear();
+					std::pair<int,int> size{_pw->get_size()};
+					std::pair<int,int> pos{_pw->get_pos()};
+					_pw->resize(size.first, COLS, pos.first, 0);
+					_pw->unfreeze();
+					_pw->draw();
+					_pw->refresh();
+					_is_signals_visible = false;
+				}
+				else
+					return ; // exit
+				break ;
+			case KEY_RESIZE:
+				_resize();
+				_is_signals_visible = false;
+				break ;
+			default:
+				ungetch(c);
+				if (!_is_signals_visible)
+					_pw->handle_input();
+				else
+					_sw->handle_input(_pw->get_selected_pid());
+		}
 	}
 }
 
@@ -381,7 +241,7 @@ void	Visual_ncs::display_cpu_bar(IVisual::Cpu_usage const &usage)
 	os << std::fixed;
 	os << mytot << "%" << bar_rb;
 	mvwprintw(_meters, y, x - os.str().length() - 1,
-					"%s", os.str().c_str()); // -1 excludes borders
+					"%s", os.str().c_str()); // -1 excludes border
 	wmove(_meters, y, strlen(bar_lb) + 1);
 
 	const int times_ni = bar * usage.ni + 0.5;

@@ -2,9 +2,12 @@
 #include <algorithm>
 #include <unistd.h>
 
-ProcessWindow::ProcessWindow(int nlines, int ncols, int begin_y, int begin_x)
+ProcessWindow::ProcessWindow(int nlines, int ncols, int begin_y, int begin_x) :
+	_size{nlines, ncols}, _pos{begin_y, begin_x}
 {
 	_processes = newwin(nlines, ncols, begin_y, begin_x);
+	_vp_end = nlines - 3;
+	::keypad(_processes, TRUE);
 }
 
 ProcessWindow::~ProcessWindow()
@@ -14,11 +17,16 @@ ProcessWindow::~ProcessWindow()
 	delwin(_processes);
 }
 
-void	ProcessWindow::draw(std::vector<IVisual::Procinfo> const &pi)
+void	ProcessWindow::set_data(std::vector<IVisual::Procinfo> const &procinfo)
+{
+	_procinfo = procinfo;
+}
+
+void	ProcessWindow::draw()
 {
 	_display_header();
-	_display_procs_info(pi);
-	_procinfo = pi;
+	_display_procs_info();
+	_display_cursor();
 }
 
 void	ProcessWindow::erase()
@@ -35,6 +43,37 @@ void	ProcessWindow::clear()
 {
 	werase(_processes);
 	wrefresh(_processes);
+}
+
+int		ProcessWindow::get_selected_pid()
+{
+	if (_procinfo.size() < _selected)
+		return (_procinfo[_selected].pid);
+	return (0);
+}
+
+void	ProcessWindow::resize(int nlines, int ncols, int begin_y, int begin_x)
+{
+	clear();
+	delwin(_processes); // same as constructor
+	_vp_end = nlines - 3;
+	_processes = newwin(nlines, ncols, begin_y, begin_x);
+	::keypad(_processes, TRUE);
+	_size.first = nlines;
+	_size.second = ncols;
+	_pos.first = begin_y;
+	_pos.second = begin_x;
+}
+
+// return const ref
+std::pair<int,int>	ProcessWindow::get_size()
+{
+	return (_size);
+}
+
+std::pair<int,int>	ProcessWindow::get_pos()
+{
+	return (_pos);
 }
 
 void	ProcessWindow::_display_header()
@@ -59,33 +98,44 @@ void	ProcessWindow::_display_header()
 	wmove(_processes, 1, 1);
 }
 
-void	ProcessWindow::_display_procs_info(std::vector<IVisual::Procinfo> const &pi)
+void	ProcessWindow::_display_procs_info()
 {
 	const int tck_sc = sysconf(_SC_CLK_TCK);
-	const int times = _vp_end > pi.size() ? pi.size() : _vp_end;
+	const int times = _vp_end > _procinfo.size() ? _procinfo.size() : _vp_end;
 
 	_display_header();
 	for (int i = _vp_start, j = 0; i < times; ++i, ++j)
 	{
 		mvwprintw(_processes, j + 2, 1, "%5d %-9.9s %2.3s %3d %7d %6d %6d "
 					"%c %4.1f %4.1f %3.1lu:%.2lu.%.2lu %-s",
-				pi[i].pid,
-				pi[i].user.c_str(),
-				pi[i].priority < -99 ? "rt" :
-					std::to_string(pi[i].priority).c_str(),
-				pi[i].nice,
-				pi[i].vsize,
-				pi[i].rss,
-				pi[i].mem_shared,
-				pi[i].state,
-				pi[i].cpu,
-				pi[i].memp,
-				pi[i].timep / (60 * tck_sc), // minutes
-				(pi[i].timep % 6000) / tck_sc, // seconds
-				(pi[i].timep % 6000) % 100, // 1/100 second
-				pi[i].command.c_str());
+				_procinfo[i].pid,
+				_procinfo[i].user.c_str(),
+				_procinfo[i].priority < -99 ? "rt" :
+						std::to_string(_procinfo[i].priority).c_str(),
+				_procinfo[i].nice,
+				_procinfo[i].vsize,
+				_procinfo[i].rss,
+				_procinfo[i].mem_shared,
+				_procinfo[i].state,
+				_procinfo[i].cpu,
+				_procinfo[i].memp,
+				_procinfo[i].timep / (60 * tck_sc), // minutes
+				(_procinfo[i].timep % 6000) / tck_sc, // seconds
+				(_procinfo[i].timep % 6000) % 100, // 1/100 second
+				_procinfo[i].command.c_str());
 	}
 	//_procinfo = pi; // steal data for key_handler
+}
+
+void	ProcessWindow::freeze()
+{
+	_saved_proc = _procinfo[_selected]; // is safe ?
+	_freeze = true;
+}
+
+void	ProcessWindow::unfreeze()
+{
+	_freeze = false;
 }
 
 void	ProcessWindow::_display_cursor()
@@ -95,17 +145,13 @@ void	ProcessWindow::_display_cursor()
 	getmaxyx(_processes, y, x);
 	if (_selected + _vp_start >= _procinfo.size())
 		_selected = 0;
-	//if (!_is_sig_open)
+	if (!_freeze)
 		mvwchgat(_processes, _selected + 2, 1, x - 2, A_NORMAL, MY_LINE, nullptr);
-	/*
 	else
 	{
-		_selected = std::find(_procinfo.begin(), _procinfo.end(), _selected_proc) - _procinfo.begin();
+		_selected = std::find(_procinfo.begin(), _procinfo.end(), _saved_proc) - _procinfo.begin();
 		mvwchgat(_processes, _selected + 2, 1, x - 2, A_NORMAL, MY_ULINE, nullptr);
-		getmaxyx(_signals, y, x);
-		mvwchgat(_signals, _sig_selected + 2, 1, x - 2, A_NORMAL, MY_LINE, nullptr);
 	}
-	*/
 }
 
 // -----------------------------------------------------------------
@@ -138,19 +184,10 @@ static void	handle_down_vp_border(unsigned int &selector, unsigned int &start, u
 }
 // -----------------------------------------------------------------
 
-int		ProcessWindow::handle_input()
+void	ProcessWindow::handle_input()
 {
 	switch (int c = wgetch(_processes))
 	{
-		case 'q': return (-1);
-				  /*
-		case 'k':
-		{
-			_open_signal_window();
-			_selected_proc = _procinfo[_selected];
-			break ;
-		}
-		*/
 		case KEY_UP:
 		{
 			handle_up_vp_border(_selected, _vp_start, _vp_end);
@@ -162,11 +199,7 @@ int		ProcessWindow::handle_input()
 			break ;
 		}
 	}
-	werase(_processes);
-	wborder(_processes, '|', '|', '-', '-', '+', '+', '+', '+');
-	// ~~~~~~~~~~~~~~~~~~~~~
-	draw(_procinfo);
-	// ~~~~~~~~~~~~~~~~~~~~~
-	wrefresh(_processes);
-	return (0);
+	erase();
+	draw();
+	refresh();
 }
