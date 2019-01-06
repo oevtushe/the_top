@@ -3,18 +3,10 @@
 #include <unistd.h>
 
 ProcessWindow::ProcessWindow(int nlines, int ncols, int begin_y, int begin_x) :
-	_size{nlines, ncols}, _pos{begin_y, begin_x}
+	Window(nlines, ncols, begin_y, begin_x)
 {
-	_processes = newwin(nlines, ncols, begin_y, begin_x);
 	_vp_end = nlines - 3;
-	::keypad(_processes, TRUE);
-}
-
-ProcessWindow::~ProcessWindow()
-{
-	werase(_processes);
-	wrefresh(_processes);
-	delwin(_processes);
+	::keypad(_win, TRUE);
 }
 
 void	ProcessWindow::set_data(std::vector<IVisual::Procinfo> const &procinfo)
@@ -29,56 +21,29 @@ void	ProcessWindow::draw()
 	_display_cursor();
 }
 
-void	ProcessWindow::erase()
-{
-	werase(_processes);
-}
-
-void	ProcessWindow::refresh()
-{
-	wrefresh(_processes);
-}
-
-void	ProcessWindow::clear()
-{
-	werase(_processes);
-	wrefresh(_processes);
-}
-
 int		ProcessWindow::get_selected_pid()
 {
-	if (_procinfo.size() < _selected)
+	if (_selected < _procinfo.size())
 		return (_procinfo[_selected].pid);
-	return (0);
+	return (std::numeric_limits<int>::max());
 }
 
 void	ProcessWindow::resize(int nlines, int ncols, int begin_y, int begin_x)
 {
 	clear();
-	delwin(_processes); // same as constructor
+	delwin(_win); // same as constructor
 	_vp_end = nlines - 3;
-	_processes = newwin(nlines, ncols, begin_y, begin_x);
-	::keypad(_processes, TRUE);
+	_win = newwin(nlines, ncols, begin_y, begin_x);
+	::keypad(_win, TRUE);
 	_size.first = nlines;
 	_size.second = ncols;
 	_pos.first = begin_y;
 	_pos.second = begin_x;
 }
 
-// return const ref
-std::pair<int,int>	ProcessWindow::get_size()
-{
-	return (_size);
-}
-
-std::pair<int,int>	ProcessWindow::get_pos()
-{
-	return (_pos);
-}
-
 void	ProcessWindow::_display_header()
 {
-	mvwprintw(_processes, 1, 1, "%5.5s %-9.9s %2.2s %3.3s %7.7s %6.6s "
+	mvwprintw(_win, 1, 1, "%5.5s %-9.9s %2.2s %3.3s %7.7s %6.6s "
 				"%6.6s %1.1s %4.4s %4.4s %9.9s %s",
 			"PID",
 			"USER",
@@ -93,9 +58,9 @@ void	ProcessWindow::_display_header()
 			"TIME+",
 			"COMMAND");
 	int x, y;
-	getmaxyx(_processes, y, x);
-	mvwchgat(_processes, 1, 1, x - 2, A_NORMAL, MY_HEADER, NULL);
-	wmove(_processes, 1, 1);
+	getmaxyx(_win, y, x);
+	mvwchgat(_win, 1, 1, x - 2, A_NORMAL, MY_HEADER, NULL);
+	wmove(_win, 1, 1);
 }
 
 void	ProcessWindow::_display_procs_info()
@@ -106,7 +71,7 @@ void	ProcessWindow::_display_procs_info()
 	_display_header();
 	for (int i = _vp_start, j = 0; i < times; ++i, ++j)
 	{
-		mvwprintw(_processes, j + 2, 1, "%5d %-9.9s %2.3s %3d %7d %6d %6d "
+		mvwprintw(_win, j + 2, 1, "%5d %-9.9s %2.3s %3d %7d %6d %6d "
 					"%c %4.1f %4.1f %3.1lu:%.2lu.%.2lu %-s",
 				_procinfo[i].pid,
 				_procinfo[i].user.c_str(),
@@ -129,7 +94,8 @@ void	ProcessWindow::_display_procs_info()
 
 void	ProcessWindow::freeze()
 {
-	_saved_proc = _procinfo[_selected]; // is safe ?
+	if (_selected < _procinfo.size())
+		_saved_proc = _procinfo[_selected];
 	_freeze = true;
 }
 
@@ -142,60 +108,30 @@ void	ProcessWindow::_display_cursor()
 {
 	int x, y;
 
-	getmaxyx(_processes, y, x);
+	getmaxyx(_win, y, x);
 	if (_selected + _vp_start >= _procinfo.size())
 		_selected = 0;
 	if (!_freeze)
-		mvwchgat(_processes, _selected + 2, 1, x - 2, A_NORMAL, MY_LINE, nullptr);
+		mvwchgat(_win, _selected + 2, 1, x - 2, A_NORMAL, MY_LINE, nullptr);
 	else
 	{
 		_selected = std::find(_procinfo.begin(), _procinfo.end(), _saved_proc) - _procinfo.begin();
-		mvwchgat(_processes, _selected + 2, 1, x - 2, A_NORMAL, MY_ULINE, nullptr);
+		mvwchgat(_win, _selected + 2, 1, x - 2, A_NORMAL, MY_ULINE, nullptr);
 	}
 }
-
-// -----------------------------------------------------------------
-static void	handle_up_vp_border(unsigned int &selector, unsigned int &start, unsigned int &finish)
-{
-	if (selector)
-		--selector;
-	else
-	{
-		if (start)
-		{
-			--start;
-			--finish;
-		}
-	}
-}
-
-static void	handle_down_vp_border(unsigned int &selector, unsigned int &start, unsigned int &finish, int size)
-{
-	if (selector + start + 1 >= finish)
-	{
-		if (finish < size)
-		{
-			++finish;
-			++start;
-		}
-	}
-	else if (selector + 1 < size)
-		++selector;
-}
-// -----------------------------------------------------------------
 
 void	ProcessWindow::handle_input()
 {
-	switch (int c = wgetch(_processes))
+	switch (int c = wgetch(_win))
 	{
 		case KEY_UP:
 		{
-			handle_up_vp_border(_selected, _vp_start, _vp_end);
+			_handle_up_vp_border();
 			break ;
 		}
 		case KEY_DOWN:
 		{
-			handle_down_vp_border(_selected, _vp_start, _vp_end, _procinfo.size());
+			_handle_down_vp_border(_procinfo.size());
 			break ;
 		}
 	}

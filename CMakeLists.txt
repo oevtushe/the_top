@@ -29,6 +29,10 @@ add_library (Visual_ncs SHARED
 		srcs/Visual_ncs.cpp
 		srcs/ProcessWindow.cpp
 		srcs/SignalsWindow.cpp
+		srcs/MetersWindow.cpp
+		srcs/TextInfoWindow.cpp
+		srcs/Selectable.cpp
+		srcs/Window.cpp
 )
 target_link_libraries (${CMAKE_PROJECT_NAME}
 		SysInfo

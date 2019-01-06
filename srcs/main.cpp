@@ -131,15 +131,14 @@ int										main(void)
 
 	do
 	{
-		ncs->clean_screen();
+		ncs->clear();
 		si->update();
 		cur = si->get_cpu_data();
 		ccur = si->get_procs_data();
 		usage = calc_cpu_usage(prev, cur);
 		procinfo = get_procinfo(pprev, ccur, usage.total);
 		fill_vdb(vdb, si, usage, procinfo);
-		ncs->draw_screen(vdb);
-		ncs->refresh();
+		ncs->draw(vdb);
 		prev = cur;
 		pprev = ccur;
 	} while (fut.wait_for(std::chrono::seconds(wait_sec)) == std::future_status::timeout);
