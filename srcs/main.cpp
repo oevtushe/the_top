@@ -1,11 +1,12 @@
 #include <unistd.h>
+#include <string.h>
 
 #include <iostream>
 #include <algorithm>
 #include <memory>
-#include <chrono>
 
-#include "Visual_ncs.hpp"
+#include "Visual_top_ncs.hpp"
+#include "Visual_htop_ncs.hpp"
 #include "SysInfo.hpp"
 
 static IVisual::Cpu_usage	calc_cpu_usage(IVisual::Cpuinfo const &prev,
@@ -107,6 +108,14 @@ void	fill_vdb(IVisual::Visual_db	&vdb,
 	vdb.load_avg = si->get_loadavg();
 	vdb.threads = si->get_thread_num();
 	vdb.uptime = si->get_uptime();
+	vdb.cur_time = si->get_curtime();
+	vdb.num_of_users = si->get_num_of_users();
+	vdb.tasks_count = si->get_tasks_count();
+}
+
+void	display_usage()
+{
+	std::cout << "Usage: ./the_top [--htop]" << std::endl;
 }
 
 /*
@@ -115,10 +124,19 @@ void	fill_vdb(IVisual::Visual_db	&vdb,
 ** Top works with this interfaces.
 */
 
-int										main(void)
+int										main(int argc, char **argv)
 {
+	std::shared_ptr<IVisual>			ncs{};
+	if (argc == 2 && (!strcmp(argv[1], "--htop")))
+		ncs.reset(new Visual_htop_ncs{});
+	else if (argc == 1)
+		ncs.reset(new Visual_top_ncs{});
+	else
+	{
+		display_usage();
+		return (1);
+	}
 	std::shared_ptr<ISys>				si{new SysInfo{}};
-	std::shared_ptr<IVisual>			ncs{new Visual_ncs{}};
 	IVisual::Cpuinfo					prev{}; // for %Cpu(s) general
 	IVisual::Cpuinfo					cur{};
 	IVisual::Cpu_usage					usage{};

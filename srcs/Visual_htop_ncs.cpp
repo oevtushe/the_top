@@ -1,4 +1,4 @@
-#include "Visual_ncs.hpp"
+#include "Visual_htop_ncs.hpp"
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
@@ -12,7 +12,7 @@ bool	operator==(IVisual::Procinfo const &a,
 	return (a.pid == b.pid);
 }
 
-Visual_ncs::Visual_ncs() : _pw{}
+Visual_htop_ncs::Visual_htop_ncs() : _pw{}
 {
 	::initscr();
 	::start_color();
@@ -31,11 +31,11 @@ Visual_ncs::Visual_ncs() : _pw{}
 	::init_pair(Window::MY_CYAN, COLOR_CYAN, COLOR_BLACK);
 	::init_pair(Window::MY_LINE, COLOR_BLACK, COLOR_CYAN);
 	::init_pair(Window::MY_ULINE, COLOR_BLACK, COLOR_WHITE);
-	_fut = std::async(std::launch::async, &Visual_ncs::_key_handler, this);
+	_fut = std::async(std::launch::async, &Visual_htop_ncs::_key_handler, this);
 	_init_windows();
 }
 
-void	Visual_ncs::_init_windows()
+void	Visual_htop_ncs::_init_windows()
 {
 	// add space between windows if can't divide evenly
 	const int space_between = COLS % 2 ? 2 : 1;
@@ -61,7 +61,7 @@ void	Visual_ncs::_init_windows()
 	_sw = new SignalsWindow(processes_height, sig_width, proc_start_y, proc_start_x);
 }
 
-void	Visual_ncs::_del_wins()
+void	Visual_htop_ncs::_del_wins()
 {
 	delete _tiw;
 	delete _mw;
@@ -69,18 +69,18 @@ void	Visual_ncs::_del_wins()
 	delete _sw;
 }
 
-Visual_ncs::~Visual_ncs()
+Visual_htop_ncs::~Visual_htop_ncs()
 {
 	_del_wins();
 	::endwin();
 }
 
-bool	Visual_ncs::wait()
+bool	Visual_htop_ncs::wait()
 {
 	return (_fut.wait_for(std::chrono::seconds(_wait_sec)) == std::future_status::timeout);
 }
 
-void	Visual_ncs::clear()
+void	Visual_htop_ncs::clear()
 {
 	_mw->erase();
 	_tiw->erase();
@@ -89,7 +89,7 @@ void	Visual_ncs::clear()
 		_sw->erase();
 }
 
-void	Visual_ncs::_refresh()
+void	Visual_htop_ncs::_refresh()
 {
 	_mw->refresh();
 	_tiw->refresh();
@@ -98,7 +98,7 @@ void	Visual_ncs::_refresh()
 		_sw->refresh();
 }
 
-void	Visual_ncs::draw(Visual_db const &db)
+void	Visual_htop_ncs::draw(Visual_db const &db)
 {
 		int	running = std::count_if(db.procinfo.begin(), db.procinfo.end(),
 				[](IVisual::Procinfo const &p) { return (p.state == 'R'); });
@@ -112,14 +112,14 @@ void	Visual_ncs::draw(Visual_db const &db)
 		_refresh();
 }
 
-void	Visual_ncs::_resize()
+void	Visual_htop_ncs::_resize()
 {
 	_del_wins();
 	::refresh();
 	_init_windows();
 }
 
-void	Visual_ncs::_open_signals_window()
+void	Visual_htop_ncs::_open_signals_window()
 {
 	std::pair<int,int> proc_size{_pw->get_size()};
 	std::pair<int,int> proc_pos{_pw->get_pos()};
@@ -135,7 +135,7 @@ void	Visual_ncs::_open_signals_window()
 	_pw->refresh();
 }
 
-void	Visual_ncs::_key_handler()
+void	Visual_htop_ncs::_key_handler()
 {
 	while (true)
 	{

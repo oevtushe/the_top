@@ -1,5 +1,5 @@
-#ifndef VISUAL_NCS_HPP
-# define VISUAL_NCS_HPP
+#ifndef VISUAL_HTOP_NCS_HPP
+# define VISUAL_HTOP_NCS_HPP
 
 # include "IVisual.hpp"
 # include "SignalsWindow.hpp"
@@ -7,16 +7,16 @@
 # include "MetersWindow.hpp"
 # include "TextInfoWindow.hpp"
 # include <ncurses.h>
-# include <thread> //
-# include <future> //
+# include <thread>
+# include <future>
 
-class Visual_ncs : public IVisual
+class Visual_htop_ncs : public IVisual
 {
 	public:
-		Visual_ncs();
-		~Visual_ncs();
-		Visual_ncs(Visual_ncs const &) = delete;
-		Visual_ncs(Visual_ncs &&) = delete;
+		Visual_htop_ncs();
+		~Visual_htop_ncs();
+		Visual_htop_ncs(Visual_htop_ncs const &) = delete;
+		Visual_htop_ncs(Visual_htop_ncs &&) = delete;
 		void									clear();
 		bool									wait();
 		void									draw(Visual_db const &db);

@@ -25,8 +25,8 @@ add_library (SysInfo SHARED
 		srcs/SysInfo.cpp
 		srcs/ISys.cpp
 )
-add_library (Visual_ncs SHARED
-		srcs/Visual_ncs.cpp
+add_library (Visual_htop_ncs SHARED
+		srcs/Visual_htop_ncs.cpp
 		srcs/ProcessWindow.cpp
 		srcs/SignalsWindow.cpp
 		srcs/MetersWindow.cpp
@@ -34,9 +34,13 @@ add_library (Visual_ncs SHARED
 		srcs/Selectable.cpp
 		srcs/Window.cpp
 )
+add_library (Visual_top_ncs SHARED
+		srcs/Visual_top_ncs.cpp
+)
 target_link_libraries (${CMAKE_PROJECT_NAME}
 		SysInfo
-		Visual_ncs
+		Visual_htop_ncs
+		Visual_top_ncs
 		${CURSES_LIBRARIES}
 		pthread
 )

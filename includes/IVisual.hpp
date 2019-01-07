@@ -53,10 +53,12 @@ class IVisual : public IIntermediate
 			Cpu_usage				usage;
 			std::vector<Procinfo>	procinfo;
 			Meminfo					meminfo;
-			//Tasks_count				tasks_count;
+			int						num_of_users;
+			Tasks_count				tasks_count;
 			Load_avg				load_avg;
 			int						threads;
 			long int				uptime;
+			std::string				cur_time;
 		};
 
 		virtual						~IVisual() {}
