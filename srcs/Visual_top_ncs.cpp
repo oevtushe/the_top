@@ -141,9 +141,9 @@ void	Visual_top_ncs::_display_procs_info(std::vector<IVisual::Procinfo> const &p
 			"COMMAND");
 	mvchgat(6, 0, -1, A_NORMAL, 1, nullptr);
 	move(7, 0);
-	const int tck_sc = sysconf(_SC_CLK_TCK);
-	const int sz = pi.size();
-	const int max_show = LINES - 7;
+	const int	tck_sc = sysconf(_SC_CLK_TCK);
+	int			sz = pi.size();
+	const int	max_show = LINES - 7;
 	if (_offset > sz)
 		_offset = sz;
 	if (sz - _offset > max_show)
