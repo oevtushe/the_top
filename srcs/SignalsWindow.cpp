@@ -55,7 +55,7 @@ void	SignalsWindow::_display_cursor()
 
 void	SignalsWindow::handle_input(int pid) // similar to ProcessWindow
 {
-	switch (int c = wgetch(_win))
+	switch (wgetch(_win))
 	{
 		case KEY_UP:
 		{

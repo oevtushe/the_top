@@ -14,7 +14,7 @@ void	Selectable::_handle_up_vp_border()
 	}
 }
 
-void	Selectable::_handle_down_vp_border(int size)
+void	Selectable::_handle_down_vp_border(unsigned int size)
 {
 	if (_selected + _vp_start + 1 >= _vp_end)
 	{

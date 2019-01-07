@@ -121,7 +121,7 @@ void	ProcessWindow::_display_cursor()
 
 void	ProcessWindow::handle_input()
 {
-	switch (int c = wgetch(_win))
+	switch (wgetch(_win))
 	{
 		case KEY_UP:
 		{

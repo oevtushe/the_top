@@ -16,11 +16,11 @@ target_include_directories (${CMAKE_PROJECT_NAME}
 	PRIVATE
 		${CURSES_INCLUDE_DIR}
 )
-set_target_properties (the_top PROPERTIES
-	CMAKE_CXX_STANDARD			11
-	CMAKE_CXX_STANDARD_REQUIRED TRUE
-	CMAKE_CXX_FLAGS				"${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -pthread"
-)
+
+#set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -pthread -std=c++11")
+
 add_library (SysInfo SHARED
 		srcs/SysInfo.cpp
 		srcs/ISys.cpp
