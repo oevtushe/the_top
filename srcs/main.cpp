@@ -117,7 +117,6 @@ void	fill_vdb(IVisual::Visual_db	&vdb,
 
 int										main(void)
 {
-	int									wait_sec{3};
 	std::shared_ptr<ISys>				si{new SysInfo{}};
 	std::shared_ptr<IVisual>			ncs{new Visual_ncs{}};
 	IVisual::Cpuinfo					prev{}; // for %Cpu(s) general
@@ -127,7 +126,6 @@ int										main(void)
 	std::vector<SysInfo::Procinfo_raw> 	ccur;
 	std::vector<IVisual::Procinfo>		procinfo;
 	IVisual::Visual_db					vdb{};
-	std::future<void> fut{ncs->run_key_handler()};
 
 	do
 	{
@@ -141,6 +139,6 @@ int										main(void)
 		ncs->draw(vdb);
 		prev = cur;
 		pprev = ccur;
-	} while (fut.wait_for(std::chrono::seconds(wait_sec)) == std::future_status::timeout);
+	} while (ncs->wait());
 	return (0);
 }

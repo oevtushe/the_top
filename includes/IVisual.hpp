@@ -3,7 +3,6 @@
 
 # include <vector>
 # include <string>
-# include <future>//
 # include "IIntermediate.hpp"
 
 /*
@@ -63,6 +62,6 @@ class IVisual : public IIntermediate
 		virtual						~IVisual() {}
 		virtual void				clear() = 0;
 		virtual void				draw(Visual_db const &db) = 0;
-		virtual std::future<void>	run_key_handler() = 0;
+		virtual bool				wait() = 0;
 };
 #endif

@@ -31,6 +31,7 @@ Visual_ncs::Visual_ncs() : _pw{}
 	::init_pair(Window::MY_CYAN, COLOR_CYAN, COLOR_BLACK);
 	::init_pair(Window::MY_LINE, COLOR_BLACK, COLOR_CYAN);
 	::init_pair(Window::MY_ULINE, COLOR_BLACK, COLOR_WHITE);
+	_fut = std::async(std::launch::async, &Visual_ncs::_key_handler, this);
 	_init_windows();
 }
 
@@ -74,6 +75,11 @@ Visual_ncs::~Visual_ncs()
 	::endwin();
 }
 
+bool	Visual_ncs::wait()
+{
+	return (_fut.wait_for(std::chrono::seconds(_wait_sec)) == std::future_status::timeout);
+}
+
 void	Visual_ncs::clear()
 {
 	_mw->erase();
@@ -104,11 +110,6 @@ void	Visual_ncs::draw(Visual_db const &db)
 		if (_is_signals_visible)
 			_sw->draw();
 		_refresh();
-}
-
-std::future<void>	Visual_ncs::run_key_handler()
-{
-	return (std::async(std::launch::async, &Visual_ncs::_key_handler, this));
 }
 
 void	Visual_ncs::_resize()

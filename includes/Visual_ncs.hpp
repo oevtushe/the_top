@@ -8,6 +8,7 @@
 # include "TextInfoWindow.hpp"
 # include <ncurses.h>
 # include <thread> //
+# include <future> //
 
 class Visual_ncs : public IVisual
 {
@@ -17,8 +18,8 @@ class Visual_ncs : public IVisual
 		Visual_ncs(Visual_ncs const &) = delete;
 		Visual_ncs(Visual_ncs &&) = delete;
 		void									clear();
+		bool									wait();
 		void									draw(Visual_db const &db);
-		std::future<void>						run_key_handler();
 	private:
 		void									_refresh();
 		TextInfoWindow							*_tiw;
@@ -31,6 +32,8 @@ class Visual_ncs : public IVisual
 		void									_del_wins();
 		void									_resize();
 		void									_open_signals_window();
+		std::future<void>						_fut;
+		int										_wait_sec{3};
 };
 
 #endif
