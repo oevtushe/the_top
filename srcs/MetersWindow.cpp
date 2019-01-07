@@ -46,7 +46,7 @@ static std::pair<double, char>	config_units(unsigned long int val)
 
 void	MetersWindow::_display_meter(int cp, int times)
 {
-	char	fill{'|'};
+	const char fill{'|'};
 
 	wattron(_win, COLOR_PAIR(cp));
 	for (int i = 0; i < times; ++i)

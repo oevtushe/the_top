@@ -62,9 +62,7 @@ void	ProcessWindow::_display_header()
 			"%MEM",
 			"TIME+",
 			"COMMAND");
-	int x, y;
-	getmaxyx(_win, y, x);
-	mvwchgat(_win, 1, 1, x - 2, A_NORMAL, MY_HEADER, nullptr);
+	mvwchgat(_win, 1, 1, _size.second - 2, A_NORMAL, MY_HEADER, nullptr);
 	wmove(_win, 1, 1);
 }
 
@@ -94,7 +92,6 @@ void	ProcessWindow::_display_procs_info()
 				(_procinfo[i].timep % 6000) % 100, // 1/100 second
 				_procinfo[i].command.c_str());
 	}
-	//_procinfo = pi; // steal data for key_handler
 }
 
 void	ProcessWindow::freeze()
@@ -111,17 +108,14 @@ void	ProcessWindow::unfreeze()
 
 void	ProcessWindow::_display_cursor()
 {
-	int x, y;
-
-	getmaxyx(_win, y, x);
 	if (_selected + _vp_start >= _procinfo.size())
 		_selected = 0;
 	if (!_freeze)
-		mvwchgat(_win, _selected + 2, 1, x - 2, A_NORMAL, MY_LINE, nullptr);
+		mvwchgat(_win, _selected + 2, 1, _size.second - 2, A_NORMAL, MY_LINE, nullptr);
 	else
 	{
 		_selected = std::find(_procinfo.begin(), _procinfo.end(), _saved_proc) - _procinfo.begin();
-		mvwchgat(_win, _selected + 2, 1, x - 2, A_NORMAL, MY_ULINE, nullptr);
+		mvwchgat(_win, _selected + 2, 1, _size.second - 2, A_NORMAL, MY_ULINE, nullptr);
 	}
 }
 

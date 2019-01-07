@@ -120,10 +120,10 @@ void	Visual_htop_ncs::_resize()
 
 void	Visual_htop_ncs::_open_signals_window()
 {
-	std::pair<int,int> proc_size{_pw->get_size()};
-	std::pair<int,int> proc_pos{_pw->get_pos()};
-	std::pair<int,int> sig_size{_sw->get_size()};
-	std::pair<int,int> sig_pos{_sw->get_pos()};
+	const std::pair<int,int> proc_size{_pw->get_size()};
+	const std::pair<int,int> proc_pos{_pw->get_pos()};
+	const std::pair<int,int> sig_size{_sw->get_size()};
+	const std::pair<int,int> sig_pos{_sw->get_pos()};
 
 	// put process window right to signal window
 	_pw->resize(proc_size.first, COLS - sig_size.second,

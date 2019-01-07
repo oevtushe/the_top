@@ -17,8 +17,9 @@ Visual_top_ncs::Visual_top_ncs() : _offset{}
 	::keypad(stdscr, TRUE);
 	::curs_set(0);
 	::halfdelay(30); // tenths of a second
-	::init_color(33, 600, 600, 600); // grey color for table header
-	::init_pair(1, COLOR_BLACK, 33);
+	const int color_num{33};
+	::init_color(color_num, 600, 600, 600); // grey color for table header
+	::init_pair(1, COLOR_BLACK, color_num);
 }
 
 Visual_top_ncs::~Visual_top_ncs()
@@ -140,9 +141,9 @@ void	Visual_top_ncs::_display_procs_info(std::vector<IVisual::Procinfo> const &p
 			"COMMAND");
 	mvchgat(6, 0, -1, A_NORMAL, 1, nullptr);
 	move(7, 0);
-	int		tck_sc = sysconf(_SC_CLK_TCK);
-	int		sz = pi.size();
-	int		max_show = LINES - 7;
+	const int tck_sc = sysconf(_SC_CLK_TCK);
+	const int sz = pi.size();
+	const int max_show = LINES - 7;
 	if (_offset > sz)
 		_offset = sz;
 	if (sz - _offset > max_show)
