@@ -9,11 +9,6 @@ SignalsWindow::SignalsWindow(int nlines, int ncols, int begin_y, int begin_x) :
 	::keypad(_win, TRUE);
 }
 
-SignalsWindow::~SignalsWindow()
-{
-	delwin(_win);
-}
-
 void	SignalsWindow::_init_signals()
 {
 	_vsignals.push_back({SIGHUP, "SIGHUP"});
@@ -45,19 +40,14 @@ void	SignalsWindow::draw()
 	{
 		mvwprintw(_win, i, 1, "%s", _vsignals[j].second.c_str());
 	}
-	int x, y; // have vars for that
-	getmaxyx(_win, y, x);
-	mvwchgat(_win, 1, 1, x - 2, A_NORMAL, MY_HEADER, nullptr); // highlight header
+	mvwchgat(_win, 1, 1, _size.second - 2, A_NORMAL, MY_HEADER, nullptr); // highlight header
 	_display_cursor();
 	wrefresh(_win);
 }
 
 void	SignalsWindow::_display_cursor()
 {
-	int x, y;
-
-	getmaxyx(_win, y, x); // have a var for that
-	mvwchgat(_win, _selected + 2, 1, x - 2, A_NORMAL, MY_LINE, nullptr);
+	mvwchgat(_win, _selected + 2, 1, _size.second - 2, A_NORMAL, MY_LINE, nullptr);
 }
 
 

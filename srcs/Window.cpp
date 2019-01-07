@@ -30,7 +30,7 @@ void					Window::refresh()
 void					Window::clear()
 {
 	erase();
-	wrefresh(_win);
+	refresh();
 }
 
 void					Window::erase()
