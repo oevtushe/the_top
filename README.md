@@ -19,6 +19,6 @@ Press `q` to exit.
 
 In `htop` mode you can send signals to a selected process
 just press a `k` button, select with arrow keys a needed signal
-and press `Enter`.
+and press an `Enter`.
 
 To close the signals window press `q`.
