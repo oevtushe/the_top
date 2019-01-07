@@ -64,7 +64,7 @@ void	ProcessWindow::_display_header()
 			"COMMAND");
 	int x, y;
 	getmaxyx(_win, y, x);
-	mvwchgat(_win, 1, 1, x - 2, A_NORMAL, MY_HEADER, NULL);
+	mvwchgat(_win, 1, 1, x - 2, A_NORMAL, MY_HEADER, nullptr);
 	wmove(_win, 1, 1);
 }
 

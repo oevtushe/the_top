@@ -138,7 +138,7 @@ void	Visual_top_ncs::_display_procs_info(std::vector<IVisual::Procinfo> const &p
 			"%MEM",
 			"TIME+",
 			"COMMAND");
-	mvchgat(6, 0, -1, A_NORMAL, 1, NULL);
+	mvchgat(6, 0, -1, A_NORMAL, 1, nullptr);
 	move(7, 0);
 	int		tck_sc = sysconf(_SC_CLK_TCK);
 	int		sz = pi.size();
