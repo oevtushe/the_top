@@ -4,7 +4,6 @@
 # include "IVisual.hpp"
 # include "Window.hpp"
 # include "Selectable.hpp"
-# include <ncurses.h>
 
 class ProcessWindow : public Window, public Selectable
 {

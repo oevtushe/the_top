@@ -1,4 +1,5 @@
 #include "TextInfoWindow.hpp"
+
 #include <ncurses.h>
 
 TextInfoWindow::TextInfoWindow(int nlines, int ncols, int begin_y, int begin_x) :

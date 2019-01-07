@@ -1,14 +1,13 @@
 #ifndef VISUAL_HTOP_NCS_HPP
 # define VISUAL_HTOP_NCS_HPP
 
+# include <future>
+
 # include "IVisual.hpp"
 # include "SignalsWindow.hpp"
 # include "ProcessWindow.hpp"
 # include "MetersWindow.hpp"
 # include "TextInfoWindow.hpp"
-# include <ncurses.h>
-# include <thread>
-# include <future>
 
 class Visual_htop_ncs : public IVisual
 {

@@ -1,6 +1,11 @@
 #include "ProcessWindow.hpp"
-#include <algorithm>
+
 #include <unistd.h>
+
+#include <algorithm>
+#include <limits>
+
+# include <ncurses.h>
 
 ProcessWindow::ProcessWindow(int nlines, int ncols, int begin_y, int begin_x) :
 	Window(nlines, ncols, begin_y, begin_x)

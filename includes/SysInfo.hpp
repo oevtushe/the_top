@@ -3,6 +3,7 @@
 
 # include <vector>
 # include <string>
+
 # include "ISys.hpp"
 
 /*
@@ -17,7 +18,8 @@ class	SysInfo : public ISys
 		~SysInfo() = default;
 	private:
 		std::vector<Procinfo_raw>				_read_proc_data();
-		ISys::Procinfo_raw						_read_proc_data_hlp(std::ifstream &fstat, std::ifstream &fstatm, std::string const &path);
+		ISys::Procinfo_raw						_read_proc_data_hlp(std::ifstream &fstat,
+				std::ifstream &fstatm, std::string const &path);
 		ISys::Cpuinfo							_read_cpu_data() const;
 		ISys::Meminfo							_read_mem_data() const;
 		ISys::Load_avg							_read_loadavg_data() const;

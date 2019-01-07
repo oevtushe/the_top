@@ -1,4 +1,6 @@
 #include "SignalsWindow.hpp"
+
+#include <ncurses.h>
 #include <signal.h>
 
 SignalsWindow::SignalsWindow(int nlines, int ncols, int begin_y, int begin_x) :

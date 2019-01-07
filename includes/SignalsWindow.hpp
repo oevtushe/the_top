@@ -1,12 +1,12 @@
 #ifndef SIGNALSWINDOW_HPP
 # define SIGNALSWINDOW_HPP
 
-# include "Window.hpp"
-# include "Selectable.hpp"
-# include <ncurses.h>
 # include <vector>
 # include <utility>
 # include <string>
+
+# include "Window.hpp"
+# include "Selectable.hpp"
 
 class SignalsWindow : public Window, public Selectable
 {

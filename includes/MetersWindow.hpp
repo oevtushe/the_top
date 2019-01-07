@@ -3,8 +3,6 @@
 
 # include "IVisual.hpp"
 # include "Window.hpp"
-# include <utility>
-# include <ncurses.h>
 
 class MetersWindow : public Window
 {

@@ -80,22 +80,6 @@ get_procinfo(std::vector<SysInfo::Procinfo_raw> const &prev,
 	return (procinfo);
 }
 
-/*
-static void	draw_screen(std::shared_ptr<IVisual> const &ncs,
-							IVisual::Cpu_usage const &usage,
-							std::vector<IVisual::Procinfo> const &ccur,
-							std::shared_ptr<ISys> const &si)
-{
-		ncs->display_cpu_bar(usage);
-		ncs->display_mem_bar(si->get_mem_data());
-		ncs->display_swap_bar(si->get_mem_data());
-		int	running = std::count_if(ccur.begin(), ccur.end(), [](IVisual::Procinfo const &p) { return (p.state == 'R'); });
-		ncs->display_right_window(si->get_thread_num(), ccur.size(),
-				running, si->get_loadavg(), si->get_uptime());
-		ncs->display_procs_info(ccur);
-}
-*/
-
 void	fill_vdb(IVisual::Visual_db	&vdb,
 					std::shared_ptr<ISys> const &si,
 					IVisual::Cpu_usage const &usage,

@@ -1,7 +1,11 @@
 #include "MetersWindow.hpp"
-#include <sstream>
+
 #include <string.h>
+
+#include <sstream>
 #include <iomanip>
+
+# include <ncurses.h>
 
 MetersWindow::MetersWindow(int nlines, int ncols, int begin_y, int begin_x) :
 	Window(nlines, ncols, begin_y, begin_x)

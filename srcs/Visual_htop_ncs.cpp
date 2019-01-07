@@ -1,10 +1,9 @@
 #include "Visual_htop_ncs.hpp"
-#include <sstream>
-#include <iomanip>
+
 #include <algorithm>
-#include <unistd.h>
-#include <string.h>
-#include <signal.h>
+
+#include <ncurses.h>
+
 
 bool	operator==(IVisual::Procinfo const &a,
 			IVisual::Procinfo const &b)

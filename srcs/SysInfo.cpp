@@ -3,10 +3,8 @@
 #include <unistd.h>
 
 #include <fstream>
-#include <iostream>
 #include <algorithm>
 #include <iterator>
-#include <numeric>
 
 #include <pwd.h>
 #include <dirent.h>

@@ -1,8 +1,9 @@
 #ifndef WINDOW_HPP
 # define WINDOW_HPP
 
-# include <ncurses.h>
 # include <utility>
+
+# include <ncurses.h>
 
 class Window
 {
