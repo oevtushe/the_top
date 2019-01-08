@@ -99,7 +99,7 @@ void	Visual_htop_ncs::_refresh()
 
 void	Visual_htop_ncs::draw(Visual_db const &db)
 {
-		int	running = std::count_if(db.procinfo.begin(), db.procinfo.end(),
+		const int running = std::count_if(db.procinfo.begin(), db.procinfo.end(),
 				[](IVisual::Procinfo const &p) { return (p.state == 'R'); });
 		_tiw->draw(db.threads, db.procinfo.size(),
 				running, db.load_avg, db.uptime);
@@ -172,7 +172,11 @@ void	Visual_htop_ncs::_key_handler()
 				if (!_is_signals_visible)
 					_pw->handle_input();
 				else
-					_sw->handle_input(_pw->get_selected_pid());
+				{
+					const int pid = _pw->get_selected_pid();
+					if (pid > 0)
+						_sw->handle_input(pid);
+				}
 		}
 	}
 }

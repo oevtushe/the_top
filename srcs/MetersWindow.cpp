@@ -5,7 +5,7 @@
 #include <sstream>
 #include <iomanip>
 
-# include <ncurses.h>
+#include <ncurses.h>
 
 MetersWindow::MetersWindow(int nlines, int ncols, int begin_y, int begin_x) :
 	Window(nlines, ncols, begin_y, begin_x)
@@ -55,10 +55,8 @@ void	MetersWindow::_display_meter(int cp, int times)
 			wprintw(_win, "%c", fill);
 		else // paint text in corresponding color
 		{
-			int	x, y;
-			getyx(_win, y, x);
 			wchgat(_win, 1, A_NORMAL, cp, nullptr);
-			wmove(_win, y, ++x);
+			wmove(_win, _pos.first, _pos.second + 1);
 		}
 	}
 	wattroff(_win, COLOR_PAIR(cp));
@@ -112,8 +110,8 @@ void	MetersWindow::_display_mem_bar(IVisual::Meminfo const &memi)
 	const unsigned long int mem_user = memi.mem_used +
 		memi.mem_buf + memi.mem_cache + memi.mem_sreclaimable;
 
-	std::pair<double, char> user{config_units(mem_user)};
-	std::pair<double, char> total{config_units(memi.mem_total)};
+	const std::pair<double, char> user{config_units(mem_user)};
+	const std::pair<double, char> total{config_units(memi.mem_total)};
 
 	const int user_prec = user.second == 'G' ? 2 : 0;
 	const int total_prec = total.second == 'G' ? 2 : 0;
@@ -151,8 +149,8 @@ void	MetersWindow::_display_swap_bar(IVisual::Meminfo const &memi)
 	y = 3; // line pos in cur _win window
 	mvwprintw(_win, y, 1, bar_lb);
 
-	std::pair<double, char>	swap_total{config_units(memi.swap_total)};
-	std::pair<double, char>	swap_used{config_units(memi.swap_used)};
+	const std::pair<double, char>	swap_total{config_units(memi.swap_total)};
+	const std::pair<double, char>	swap_used{config_units(memi.swap_used)};
 
 	std::ostringstream	os;
 	const int total_prec = swap_total.second == 'G' ? 2 : 0;

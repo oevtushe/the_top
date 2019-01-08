@@ -33,14 +33,13 @@ int		ProcessWindow::get_selected_pid()
 {
 	if (_selected < _procinfo.size())
 		return (_procinfo[_selected].pid);
-	return (std::numeric_limits<int>::max());
+	return (0); // selected proc. doesn't exist
 }
 
 void	ProcessWindow::resize(int nlines, int ncols, int begin_y, int begin_x)
 {
 	clear();
 	delwin(_win); // same as constructor
-	//_vp_end = nlines - 3;
 	_win = newwin(nlines, ncols, begin_y, begin_x);
 	::keypad(_win, TRUE);
 	_size.first = nlines;
@@ -73,7 +72,8 @@ void	ProcessWindow::_display_header()
 // and selected process is jumping
 void	ProcessWindow::_config_vp()
 {
-	unsigned int tmp = std::find(_procinfo.begin(), _procinfo.end(), _saved_proc) - _procinfo.begin();
+	const unsigned int tmp = std::find(_procinfo.begin(),
+				_procinfo.end(), _saved_proc) - _procinfo.begin();
 	if (tmp >= _vp_end)
 	{
 		_vp_end = tmp + 1;
@@ -93,9 +93,9 @@ void	ProcessWindow::_config_vp()
 void	ProcessWindow::_display_procs_info()
 {
 	const int tck_sc = sysconf(_SC_CLK_TCK);
-	const int times = _vp_end > _procinfo.size() ? _procinfo.size() : _vp_end;
+	const int end = _vp_end > _procinfo.size() ? _procinfo.size() : _vp_end;
 
-	for (int i = _vp_start, j = 0; i < times; ++i, ++j)
+	for (int i = _vp_start, j = 0; i < end; ++i, ++j)
 	{
 		mvwprintw(_win, j + 2, 1, "%5d %-9.9s %2.3s %3d %7d %6d %6d "
 					"%c %4.1f %4.1f %3.1lu:%.2lu.%.2lu %-s",

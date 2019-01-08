@@ -46,9 +46,8 @@ void	Visual_top_ncs::draw(Visual_db const &db)
 
 bool	Visual_top_ncs::wait()
 {
-	int		c{};
 
-	switch((c = ::getch()))
+	switch(getch())
 	{
 		case KEY_DOWN:
 			++_offset;

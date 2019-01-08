@@ -7,7 +7,7 @@ SignalsWindow::SignalsWindow(int nlines, int ncols, int begin_y, int begin_x) :
 	Window(nlines, ncols, begin_y, begin_x)
 {
 	_init_signals();
-	_vp_end = nlines - 3;
+	_vp_end = nlines - 3; // ignore borders
 	::keypad(_win, TRUE);
 }
 
@@ -36,9 +36,9 @@ void	SignalsWindow::_init_signals()
 
 void	SignalsWindow::draw()
 {
-	int		times = _vp_end > _vsignals.size() ? _vsignals.size() : _vp_end;
+	const int	end = _vp_end > _vsignals.size() ? _vsignals.size() : _vp_end;
 	mvwprintw(_win, 1, 1, "Send signal:");
-	for (int j = _vp_start, i = 2; j < times; ++j, ++i)
+	for (int j = _vp_start, i = 2; j < end; ++j, ++i)
 	{
 		mvwprintw(_win, i, 1, "%s", _vsignals[j].second.c_str());
 	}

@@ -21,8 +21,8 @@ class Visual_htop_ncs : public IVisual
 		void									draw(Visual_db const &db);
 	private:
 		void									_refresh();
-		TextInfoWindow							*_tiw;
 		bool									_is_signals_visible{};
+		TextInfoWindow							*_tiw;
 		ProcessWindow							*_pw;
 		SignalsWindow							*_sw;
 		MetersWindow							*_mw;

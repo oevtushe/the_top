@@ -74,8 +74,8 @@ ISys::Procinfo_raw	SysInfo::_read_proc_data_hlp(std::ifstream &fstat,
 		throw std::logic_error("Can't lstat dir " + path);
 	pi.user = getpwuid(st.st_uid)->pw_name;
 
-	unsigned long int utime = std::stoul(stat_data[13]);
-	unsigned long int stime = std::stoul(stat_data[14]);
+	const unsigned long int utime = std::stoul(stat_data[13]);
+	const unsigned long int stime = std::stoul(stat_data[14]);
 	pi.timep = (utime + stime);
 
 	pi.memp = (static_cast<double>(pi.rss) / _mem.mem_total) * 100.0; // converted to percentage
@@ -96,7 +96,7 @@ long int								SysInfo::_read_uptime() const
 
 ISys::Meminfo							SysInfo::_read_mem_data() const
 {
-	std::string					meminfo_path{"/proc/meminfo"};
+	const std::string			meminfo_path{"/proc/meminfo"};
 	std::ifstream				fmemi(meminfo_path);
 	if (fmemi.fail())
 		throw (std::logic_error(meminfo_path + " unavailable"));
