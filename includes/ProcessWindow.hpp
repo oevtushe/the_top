@@ -23,6 +23,7 @@ class ProcessWindow : public Window, public Selectable
 		IVisual::Procinfo						_saved_proc{};
 		std::vector<IVisual::Procinfo> 			_procinfo;
 		IVisual::Procinfo						_selected_proc;
+		void									_config_vp();
 		bool									_freeze{};
 };
 

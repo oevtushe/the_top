@@ -8,6 +8,7 @@ class Selectable
 		void 			_handle_down_vp_border(unsigned int size);
 		unsigned int	_vp_start{}; // vp -> view point
 		unsigned int	_vp_end{};
+		unsigned int	_vp_size;
 		unsigned int	_selected{};
 };
 

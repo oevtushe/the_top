@@ -11,6 +11,7 @@ ProcessWindow::ProcessWindow(int nlines, int ncols, int begin_y, int begin_x) :
 	Window(nlines, ncols, begin_y, begin_x)
 {
 	_vp_end = nlines - 3;
+	_vp_size = _vp_end;
 	::keypad(_win, TRUE);
 }
 
@@ -21,6 +22,8 @@ void	ProcessWindow::set_data(std::vector<IVisual::Procinfo> const &procinfo)
 
 void	ProcessWindow::draw()
 {
+	if (_freeze)
+		_config_vp();
 	_display_header();
 	_display_procs_info();
 	_display_cursor();
@@ -37,7 +40,7 @@ void	ProcessWindow::resize(int nlines, int ncols, int begin_y, int begin_x)
 {
 	clear();
 	delwin(_win); // same as constructor
-	_vp_end = nlines - 3;
+	//_vp_end = nlines - 3;
 	_win = newwin(nlines, ncols, begin_y, begin_x);
 	::keypad(_win, TRUE);
 	_size.first = nlines;
@@ -66,12 +69,32 @@ void	ProcessWindow::_display_header()
 	wmove(_win, 1, 1);
 }
 
+// help us change view point when signals win is open,
+// and selected process is jumping
+void	ProcessWindow::_config_vp()
+{
+	unsigned int tmp = std::find(_procinfo.begin(), _procinfo.end(), _saved_proc) - _procinfo.begin();
+	if (tmp >= _vp_end)
+	{
+		_vp_end = tmp + 1;
+		_vp_start = _vp_end - _vp_size;
+		_selected = _vp_size - 1;
+	}
+	else if (tmp < _vp_start)
+	{
+		_vp_start = tmp;
+		_vp_end = _vp_start + _vp_size;
+		_selected = 0;
+	}
+	else
+		_selected = tmp - _vp_start;
+}
+
 void	ProcessWindow::_display_procs_info()
 {
 	const int tck_sc = sysconf(_SC_CLK_TCK);
 	const int times = _vp_end > _procinfo.size() ? _procinfo.size() : _vp_end;
 
-	_display_header();
 	for (int i = _vp_start, j = 0; i < times; ++i, ++j)
 	{
 		mvwprintw(_win, j + 2, 1, "%5d %-9.9s %2.3s %3d %7d %6d %6d "
@@ -96,8 +119,7 @@ void	ProcessWindow::_display_procs_info()
 
 void	ProcessWindow::freeze()
 {
-	if (_selected < _procinfo.size())
-		_saved_proc = _procinfo[_selected];
+	_saved_proc = _procinfo[_vp_start + _selected];
 	_freeze = true;
 }
 
@@ -113,10 +135,7 @@ void	ProcessWindow::_display_cursor()
 	if (!_freeze)
 		mvwchgat(_win, _selected + 2, 1, _size.second - 2, A_NORMAL, MY_LINE, nullptr);
 	else
-	{
-		_selected = std::find(_procinfo.begin(), _procinfo.end(), _saved_proc) - _procinfo.begin();
 		mvwchgat(_win, _selected + 2, 1, _size.second - 2, A_NORMAL, MY_ULINE, nullptr);
-	}
 }
 
 void	ProcessWindow::handle_input()
