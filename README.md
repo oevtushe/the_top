@@ -5,6 +5,11 @@ My simple version of `top` and `htop` linux utils.
 <img src="images/htop.png" alt="htop" width="500" height="300">
 <img src="images/htop_signals.png" alt="htop_signals" width="500" height="300">
 
+### How to build
+```
+mkdir build && cd build && cmake .. && make
+```
+
 ### How to run
 ```
 ./the_top
